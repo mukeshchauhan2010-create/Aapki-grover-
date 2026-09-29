@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 300" width="420" height="300" role="img" aria-label="Farm to home: sun over fields, fresh produce and delivery">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eafae6"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7ec24a"/>
+      <stop offset="1" stop-color="#4f9a2f"/>
+    </linearGradient>
+  </defs>
+
+  <!-- soft backdrop -->
+  <rect width="420" height="300" fill="url(#sky)" opacity="0.55"/>
+
+  <!-- sun (morning pick) -->
+  <circle cx="330" cy="70" r="34" fill="#ffd66b"/>
+  <g stroke="#ffd66b" stroke-width="5" stroke-linecap="round" opacity="0.85">
+    <line x1="330" y1="14" x2="330" y2="0"/>
+    <line x1="378" y1="34" x2="392" y2="24"/>
+    <line x1="386" y1="82" x2="404" y2="86"/>
+    <line x1="282" y1="34" x2="268" y2="24"/>
+  </g>
+
+  <!-- rolling fields -->
+  <path d="M0 210 Q105 175 210 210 T420 205 V300 H0 Z" fill="url(#field)"/>
+  <path d="M0 240 Q120 215 240 245 T420 238 V300 H0 Z" fill="#3f8a27" opacity="0.9"/>
+  <!-- crop rows -->
+  <g stroke="#2f6f1e" stroke-width="3" opacity="0.5" stroke-linecap="round">
+    <line x1="30" y1="262" x2="70" y2="250"/>
+    <line x1="95" y1="266" x2="135" y2="254"/>
+    <line x1="160" y1="270" x2="200" y2="258"/>
+    <line x1="225" y1="270" x2="265" y2="258"/>
+    <line x1="290" y1="266" x2="330" y2="254"/>
+  </g>
+
+  <!-- delivery truck (deliver to you) -->
+  <g transform="translate(250,150)">
+    <rect x="0" y="0" width="70" height="42" rx="6" fill="#ffffff" stroke="#0f5d2a" stroke-width="3"/>
+    <path d="M70 12 H92 L108 30 V42 H70 Z" fill="#ffffff" stroke="#0f5d2a" stroke-width="3"/>
+    <rect x="74" y="16" width="16" height="12" rx="2" fill="#cfeecb"/>
+    <circle cx="22" cy="48" r="10" fill="#1c261e"/><circle cx="22" cy="48" r="4" fill="#fff"/>
+    <circle cx="90" cy="48" r="10" fill="#1c261e"/><circle cx="90" cy="48" r="4" fill="#fff"/>
+    <!-- leaf mark on the van -->
+    <path d="M20 21 q10 -12 22 -8 q-4 12 -16 14 q-6 -2 -6 -6 Z" fill="#3f9a3c"/>
+  </g>
+
+  <!-- basket of fresh produce (grading/packing) -->
+  <g transform="translate(70,150)">
+    <!-- greens -->
+    <circle cx="40" cy="18" r="16" fill="#5eb036"/>
+    <circle cx="62" cy="22" r="13" fill="#79c24a"/>
+    <!-- tomato -->
+    <circle cx="24" cy="26" r="12" fill="#e5533a"/>
+    <path d="M24 15 l3 -5 l3 5 Z" fill="#3f9a3c"/>
+    <!-- orange -->
+    <circle cx="78" cy="30" r="11" fill="#f5941f"/>
+    <!-- basket -->
+    <path d="M6 34 H98 L88 74 H16 Z" fill="#c88a3c"/>
+    <path d="M6 34 H98 L96 44 H8 Z" fill="#a9722c"/>
+    <g stroke="#8a5c20" stroke-width="2" opacity="0.6">
+      <line x1="26" y1="44" x2="30" y2="72"/>
+      <line x1="52" y1="44" x2="52" y2="72"/>
+      <line x1="78" y1="44" x2="74" y2="72"/>
+    </g>
+  </g>
+
+  <!-- floating fresh leaf -->
+  <path d="M150 60 q26 -30 58 -20 q-10 32 -42 36 q-16 -4 -16 -16 Z" fill="#4f9a2f" opacity="0.9"/>
+  <path d="M158 74 q20 -20 44 -18" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.7"/>
+</svg>

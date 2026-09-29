@@ -182,6 +182,9 @@ include __DIR__.'/includes/header.php';
       <li>Farm to our center for sorting, grading &amp; packaging — then delivered to you.</li>
     </ul>
   </div>
+  <div class="category-promo-art">
+    <img src="<?=url('assets/images/banners/farm-fresh-promise.svg')?>" alt="Farm to home — fresh produce picked, packed and delivered" loading="lazy" width="420" height="300">
+  </div>
 </div></div></section>
 <?php endif; ?>
 <section class="container categories"><div class="section-head"><div><h2 class="categories-title">SHOP BY CATEGORY</h2><p class="categories-tagline">Farm to your kitchen, daily fresh vegetables and fruits</p></div><div class="aisle-arrows"><button type="button" class="aisle-arrow" data-dir="-1" aria-label="Previous categories">‹</button><button type="button" class="aisle-arrow" data-dir="1" aria-label="Next categories">›</button></div></div><div class="cat-scroller" id="categoryScroller"><?php foreach($cats as $c): ?><a class="cat-card" href="<?=url($c['slug'].'/#products')?>"><div class="cat-photo"><img loading="lazy" decoding="async" src="<?=e(asset_url($c['image']??null))?>" alt="<?=e($c['name'])?>" onerror="this.onerror=null;this.src='<?=e(url('assets/images/categories/category-placeholder.svg'))?>';"></div><b><?=e($c['name'])?></b><span>Explore →</span></a><?php endforeach; ?></div></section>

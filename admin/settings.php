@@ -8,6 +8,7 @@ $keys = [
     'point_value_rupees','referral_enabled','referral_points','store_popup_enabled',
     'default_meta_title','default_meta_description','default_meta_keywords',
     'razorpay_enabled','razorpay_key_id','razorpay_key_secret','razorpay_webhook_secret',
+    'ticker_enabled','ticker_1','ticker_2','ticker_3','ticker_4','ticker_5',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['csrf'] ?? null)) {
@@ -129,6 +130,29 @@ function on_off(PDO $pdo, string $key, string $name): string {
         <input class="ap-input" type="password" name="razorpay_webhook_secret" value="<?= e(setting($pdo,'razorpay_webhook_secret')) ?>">
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ── Top ticker / marquee ──────────────────────────────────── -->
+<div class="ap-card">
+  <div class="ap-card-header"><h2 class="ap-card-title">📢 Top ticker / marquee</h2></div>
+  <div class="ap-card-body">
+    <div class="ap-form-grid">
+      <div class="ap-field">
+        <label class="ap-label">Ticker enabled</label>
+        <?= on_off($pdo,'ticker_enabled','ticker_enabled') ?>
+        <span class="ap-hint">Turn Off to hide the ticker on all pages.</span>
+      </div>
+    </div>
+    <div class="ap-form-grid">
+      <?php for($i=1;$i<=5;$i++): ?>
+      <div class="ap-field">
+        <label class="ap-label">Ticker message <?= $i ?></label>
+        <input class="ap-input" name="ticker_<?= $i ?>" value="<?= e(setting($pdo,'ticker_'.$i)) ?>" placeholder="e.g. Free delivery on orders above ₹499">
+      </div>
+      <?php endfor; ?>
+    </div>
+    <span class="ap-hint">Empty messages are skipped. The ticker shows only when enabled and at least one message has text.</span>
   </div>
 </div>
 
