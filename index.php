@@ -169,10 +169,22 @@ include __DIR__.'/includes/header.php';
 </script>
 <?php endif; ?>
 <?php endif; ?>
-<section class="container categories"><div class="section-head"><div><span class="eyebrow">SHOP BY CATEGORY</span><h2>Fresh from every aisle</h2></div><div class="aisle-arrows"><button type="button" class="aisle-arrow" data-dir="-1" aria-label="Previous categories">‹</button><button type="button" class="aisle-arrow" data-dir="1" aria-label="Next categories">›</button></div></div><div class="cat-scroller" id="categoryScroller"><?php foreach($cats as $c): ?><a class="cat-card" href="<?=url($c['slug'].'/#products')?>"><div class="cat-photo"><img loading="lazy" decoding="async" src="<?=e(asset_url($c['image']??null))?>" alt="<?=e($c['name'])?>" onerror="this.onerror=null;this.src='<?=e(url('assets/images/categories/category-placeholder.svg'))?>';"></div><b><?=e($c['name'])?></b><span>Explore →</span></a><?php endforeach; ?></div></section>
 <?php if($catRow): ?>
-<section class="category-banner-wrap"><div class="container"><div class="category-banner"><img src="<?=e($catRow['slug']==='masala-spices'?url('assets/images/banners/masala-spices.svg'):url('assets/images/banners/hero-farm-home.svg'))?>" alt="<?=e($catRow['name'])?>"></div></div></section>
+<section class="category-promo-wrap"><div class="container"><div class="category-promo">
+  <div class="category-promo-content">
+    <span class="category-promo-eyebrow">🌿 FARM FRESH PROMISE</span>
+    <h2 class="category-promo-title"><?=e($catRow['name'])?></h2>
+    <ul class="category-promo-list">
+      <li>We promise our customers daily fresh vegetables delivered straight from farmers.</li>
+      <li>Organically grown crops — with no pesticide or minimal pesticide used.</li>
+      <li>Crops grown in clean water and healthy soil — no drain, river or nala water.</li>
+      <li>No unhygienic Mandi, no long travel, no middleman.</li>
+      <li>Farm to our center for sorting, grading &amp; packaging — then delivered to you.</li>
+    </ul>
+  </div>
+</div></div></section>
 <?php endif; ?>
+<section class="container categories"><div class="section-head"><div><h2 class="categories-title">SHOP BY CATEGORY</h2><p class="categories-tagline">Farm to your kitchen, daily fresh vegetables and fruits</p></div><div class="aisle-arrows"><button type="button" class="aisle-arrow" data-dir="-1" aria-label="Previous categories">‹</button><button type="button" class="aisle-arrow" data-dir="1" aria-label="Next categories">›</button></div></div><div class="cat-scroller" id="categoryScroller"><?php foreach($cats as $c): ?><a class="cat-card" href="<?=url($c['slug'].'/#products')?>"><div class="cat-photo"><img loading="lazy" decoding="async" src="<?=e(asset_url($c['image']??null))?>" alt="<?=e($c['name'])?>" onerror="this.onerror=null;this.src='<?=e(url('assets/images/categories/category-placeholder.svg'))?>';"></div><b><?=e($c['name'])?></b><span>Explore →</span></a><?php endforeach; ?></div></section>
 <section id="products" class="container products-section <?= $catRow?'category-layout':'' ?>">
 <?php if($catRow): ?>
 <aside class="category-sidebar">
@@ -279,7 +291,59 @@ include __DIR__.'/includes/header.php';
 <script>
 (function(){
  const sc=document.getElementById('categoryScroller');
- if(sc) document.querySelectorAll('.aisle-arrow').forEach(b=>b.addEventListener('click',()=>sc.scrollBy({left:Number(b.dataset.dir)*320,behavior:'smooth'})));
+ if(!sc) return;
+
+ // Manual arrow controls
+ document.querySelectorAll('.aisle-arrow').forEach(b=>b.addEventListener('click',()=>{
+   pauseAuto();
+   sc.scrollBy({left:Number(b.dataset.dir)*320,behavior:'smooth'});
+   resumeAutoSoon();
+ }));
+
+ // ── Auto slide ──────────────────────────────────────
+ const STEP=200;      /* px moved each tick */
+ const DELAY=2500;    /* ms between ticks   */
+ let timer=null, paused=false, resumeTimer=null;
+
+ function canScroll(){ return sc.scrollWidth - sc.clientWidth > 4; }
+
+ function tick(){
+   if(paused || !canScroll()) return;
+   const maxLeft = sc.scrollWidth - sc.clientWidth;
+   // If at (or near) the end, loop back to start; else advance
+   if(sc.scrollLeft >= maxLeft - 4){
+     sc.scrollTo({left:0,behavior:'smooth'});
+   } else {
+     sc.scrollBy({left:STEP,behavior:'smooth'});
+   }
+ }
+ function startAuto(){ clearInterval(timer); timer=setInterval(tick,DELAY); }
+ function pauseAuto(){ paused=true; }
+ function resumeAutoSoon(){ clearTimeout(resumeTimer); resumeTimer=setTimeout(()=>{paused=false;},4000); }
+
+ // Pause on hover / touch / manual scroll, resume shortly after
+ sc.addEventListener('mouseenter',pauseAuto);
+ sc.addEventListener('mouseleave',()=>{paused=false;});
+ sc.addEventListener('touchstart',()=>{pauseAuto();resumeAutoSoon();},{passive:true});
+ sc.addEventListener('wheel',()=>{pauseAuto();resumeAutoSoon();},{passive:true});
+
+ // Pause when tab hidden
+ document.addEventListener('visibilitychange',()=>{ paused=document.hidden; });
+
+ // Respect reduced-motion preference
+ if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+ startAuto();
 })();
 </script>
+<?php
+// ── Category description box (above footer, listing pages only) ──
+$listingDesc = $catRow ? trim((string)($catRow['meta_description'] ?? '')) : '';
+if($listingDesc !== ''):
+?>
+<section class="category-desc-wrap"><div class="container"><div class="category-desc-box">
+  <h3 class="category-desc-title">About <?=e($catRow['name'])?></h3>
+  <p><?=e($listingDesc)?></p>
+</div></div></section>
+<?php endif; ?>
 <?php include __DIR__.'/includes/footer.php'; ?>
