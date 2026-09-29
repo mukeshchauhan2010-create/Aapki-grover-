@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head><title>Favicon Preview</title>
+<style>
+  body { background: #eee; font-family: sans-serif; padding: 30px; }
+  .row { display: flex; align-items: flex-end; gap: 20px; margin: 20px 0; flex-wrap: wrap; }
+  .box { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .box span { font-size: 12px; color: #555; }
+  img { image-rendering: pixelated; }
+  .on-dark { background: #1a1a2e; padding: 10px; border-radius: 8px; }
+</style>
+</head>
+<body>
+<h2>Favicon Preview — Aapki Grocery</h2>
+
+<h3>SVG (scalable)</h3>
+<div class="row">
+  <div class="box"><img src="../assets/favicon.svg" width="512" height="512"><span>512px SVG</span></div>
+  <div class="box"><img src="../assets/favicon.svg" width="192" height="192"><span>192px</span></div>
+  <div class="box"><img src="../assets/favicon.svg" width="128" height="128"><span>128px</span></div>
+  <div class="box"><img src="../assets/favicon.svg" width="64" height="64"><span>64px</span></div>
+  <div class="box"><img src="../assets/favicon.svg" width="32" height="32"><span>32px</span></div>
+  <div class="box"><img src="../assets/favicon.svg" width="16" height="16"><span>16px</span></div>
+</div>
+
+<h3>PNG exports</h3>
+<div class="row">
+  <div class="box"><img src="../assets/favicon-512.png" width="128"><span>512.png</span></div>
+  <div class="box"><img src="../assets/favicon-192.png" width="96"><span>192.png</span></div>
+  <div class="box"><img src="../assets/favicon-128.png" width="64"><span>128.png</span></div>
+  <div class="box"><img src="../assets/favicon-64.png"  width="32"><span>64.png</span></div>
+  <div class="box"><img src="../assets/favicon-32.png"  width="32"><span>32.png</span></div>
+  <div class="box"><img src="../assets/favicon-16.png"  width="16"><span>16.png</span></div>
+</div>
+
+<h3>On dark background</h3>
+<div class="row on-dark">
+  <div class="box"><img src="../assets/favicon.svg" width="128"><span style="color:#ccc">128px</span></div>
+  <div class="box"><img src="../assets/favicon.svg" width="48"><span style="color:#ccc">48px</span></div>
+  <div class="box"><img src="../assets/favicon.svg" width="32"><span style="color:#ccc">32px</span></div>
+</div>
+</body>
+</html>

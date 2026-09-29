@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600">
+<defs>
+ <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#eaf7ff"/><stop offset="1" stop-color="#f8f4df"/></linearGradient>
+ <linearGradient id="field" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#7fb64d"/><stop offset="1" stop-color="#2f7a3d"/></linearGradient>
+ <linearGradient id="road" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#d7b477"/><stop offset="1" stop-color="#f2d69e"/></linearGradient>
+</defs>
+<rect width="900" height="600" rx="36" fill="url(#sky)"/>
+<circle cx="760" cy="105" r="54" fill="#f5c84b"/>
+<path d="M0 255 Q180 165 360 250 T720 230 T900 250 V600 H0Z" fill="#6fa34a"/>
+<path d="M0 335 Q180 245 370 335 T720 315 T900 330 V600 H0Z" fill="url(#field)"/>
+<g stroke="#dcefc6" stroke-width="5" opacity=".8">
+ <path d="M40 500 Q180 395 330 505"/><path d="M90 545 Q230 440 390 545"/>
+ <path d="M470 500 Q600 405 760 500"/><path d="M520 550 Q650 455 820 550"/>
+</g>
+<g fill="#e84d35"><circle cx="170" cy="405" r="12"/><circle cx="210" cy="435" r="11"/><circle cx="255" cy="400" r="12"/></g>
+<g fill="#f4c62f"><circle cx="305" cy="450" r="11"/><circle cx="350" cy="425" r="10"/><circle cx="395" cy="462" r="12"/></g>
+<path d="M395 600 C455 520 505 470 555 410 C600 360 655 330 730 315 C760 308 785 300 805 290" fill="none" stroke="url(#road)" stroke-width="72" stroke-linecap="round"/>
+<g transform="translate(585 310)">
+ <rect x="0" y="32" width="175" height="82" rx="16" fill="#f7fff2" stroke="#23683b" stroke-width="6"/>
+ <rect x="112" y="0" width="63" height="75" rx="13" fill="#e9f5df" stroke="#23683b" stroke-width="6"/>
+ <circle cx="43" cy="119" r="23" fill="#263a2b"/><circle cx="140" cy="119" r="23" fill="#263a2b"/>
+ <rect x="18" y="52" width="58" height="22" rx="7" fill="#75ae4c"/>
+ <path d="M129 18h38v40h-38z" fill="#bfe3f2"/>
+</g>
+<g transform="translate(680 165)">
+ <path d="M0 80 Q55 10 110 80Z" fill="#fff"/><path d="M15 80 Q55 25 95 80" fill="#8ac25a"/>
+ <rect x="12" y="80" width="86" height="72" rx="10" fill="#fff" stroke="#4d8e3e" stroke-width="5"/>
+ <path d="M43 152v-40h25v40" fill="#d9b16e"/>
+ <circle cx="27" cy="105" r="7" fill="#4d8e3e"/><circle cx="78" cy="105" r="7" fill="#4d8e3e"/>
+</g>
+<text x="55" y="82" font-family="Arial,sans-serif" font-size="28" font-weight="700" fill="#174d2b">FARM • FRESH • HOME</text>
+</svg>

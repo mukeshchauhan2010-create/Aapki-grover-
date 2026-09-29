@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+
+  <!-- White background -->
+  <rect width="120" height="120" fill="#ffffff"/>
+
+  <!-- ═══════════════════════════════════
+       LETTER  a  (orange)
+       Centre x≈33, top y≈38, bottom y≈95
+  ════════════════════════════════════ -->
+  <text x="8" y="95"
+        font-family="Arial Black, Arial, Helvetica, sans-serif"
+        font-weight="900"
+        font-size="72"
+        fill="#F47920">a</text>
+
+  <!-- ═══════════════════════════════════
+       LETTER  g  (dark green)
+       Centre x≈87, top y≈38, bottom y≈105
+  ════════════════════════════════════ -->
+  <text x="60" y="95"
+        font-family="Arial Black, Arial, Helvetica, sans-serif"
+        font-weight="900"
+        font-size="72"
+        fill="#2E7D32">g</text>
+
+  <!-- ═══════════════════════════════════
+       LEAF SPROUT over  a  (centre ~33)
+  ════════════════════════════════════ -->
+  <!-- stem -->
+  <line x1="33" y1="38" x2="33" y2="22"
+        stroke="#388E3C" stroke-width="4"
+        stroke-linecap="round"/>
+  <!-- left leaf — dark green, curves upper-left -->
+  <path d="M33,28 Q18,14 16,8 Q26,10 33,28Z"
+        fill="#388E3C"/>
+  <!-- right leaf — medium green, curves upper-right -->
+  <path d="M33,28 Q48,14 50,8 Q40,10 33,28Z"
+        fill="#66BB6A"/>
+
+  <!-- ═══════════════════════════════════
+       LEAF SPROUT over  g  (centre ~87)
+  ════════════════════════════════════ -->
+  <!-- stem -->
+  <line x1="87" y1="38" x2="87" y2="22"
+        stroke="#388E3C" stroke-width="4"
+        stroke-linecap="round"/>
+  <!-- left leaf -->
+  <path d="M87,28 Q72,14 70,8 Q80,10 87,28Z"
+        fill="#388E3C"/>
+  <!-- right leaf -->
+  <path d="M87,28 Q102,14 104,8 Q94,10 87,28Z"
+        fill="#66BB6A"/>
+
+</svg>
