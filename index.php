@@ -338,12 +338,17 @@ include __DIR__.'/includes/header.php';
 </script>
 <?php
 // ── Category description box (above footer, listing pages only) ──
-$listingDesc = $catRow ? trim((string)($catRow['meta_description'] ?? '')) : '';
+// Prefer the admin-managed listing_description; fall back to SEO meta_description.
+$listingDesc = '';
+if($catRow){
+    $listingDesc = trim((string)($catRow['listing_description'] ?? ''));
+    if($listingDesc === '') $listingDesc = trim((string)($catRow['meta_description'] ?? ''));
+}
 if($listingDesc !== ''):
 ?>
 <section class="category-desc-wrap"><div class="container"><div class="category-desc-box">
   <h3 class="category-desc-title">About <?=e($catRow['name'])?></h3>
-  <p><?=e($listingDesc)?></p>
+  <p><?=nl2br(e($listingDesc))?></p>
 </div></div></section>
 <?php endif; ?>
 <?php include __DIR__.'/includes/footer.php'; ?>

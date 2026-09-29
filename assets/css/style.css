@@ -785,3 +785,11 @@ body.admin-body main { display: block; }
   .categories-tagline{font-size:13px}
   .category-desc-box{padding:18px}
 }
+
+/* ============================================================
+   HEADER ACCOUNT AVATAR (profile photo when logged in)
+   ============================================================ */
+.account-icon.account-avatar{overflow:hidden;padding:0;background:var(--fresh)}
+.account-icon.account-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.account-icon .avatar-fallback-text{font-weight:800;font-size:13px;color:var(--green);line-height:1}
+.account-icon.avatar-fallback{background:var(--green);color:#fff;font-weight:800;font-size:13px}

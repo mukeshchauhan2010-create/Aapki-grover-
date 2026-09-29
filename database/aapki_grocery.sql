@@ -123,7 +123,8 @@ CREATE TABLE `categories` (
   `sort_order` int(11) DEFAULT 0,
   `meta_title` varchar(180) DEFAULT NULL,
   `meta_description` varchar(320) DEFAULT NULL,
-  `meta_keywords` varchar(500) DEFAULT NULL
+  `meta_keywords` varchar(500) DEFAULT NULL,
+  `listing_description` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -655,6 +656,7 @@ CREATE TABLE `users` (
   `last_name` varchar(80) DEFAULT NULL,
   `email` varchar(190) DEFAULT NULL,
   `phone` varchar(20) DEFAULT NULL,
+  `avatar` varchar(500) DEFAULT NULL,
   `password_hash` varchar(255) DEFAULT NULL,
   `provider` enum('local','google','facebook') NOT NULL DEFAULT 'local',
   `provider_id` varchar(190) DEFAULT NULL,

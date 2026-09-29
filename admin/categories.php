@@ -36,22 +36,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['csrf'] ?? null)
             if ($image) {
                 $pdo->prepare(
                     'UPDATE categories SET parent_id=?,name=?,slug=?,image=?,sort_order=?,is_active=?,
-                     meta_title=?,meta_description=?,meta_keywords=? WHERE id=?'
+                     meta_title=?,meta_description=?,meta_keywords=?,listing_description=? WHERE id=?'
                 )->execute([$parentId,$name,$slug,$image,$_POST['sort_order'],isset($_POST['active'])?1:0,
-                    trim($_POST['meta_title']),trim($_POST['meta_description']),trim($_POST['meta_keywords']),$id]);
+                    trim($_POST['meta_title']),trim($_POST['meta_description']),trim($_POST['meta_keywords']),
+                    trim($_POST['listing_description'] ?? '') ?: null,$id]);
             } else {
                 $pdo->prepare(
                     'UPDATE categories SET parent_id=?,name=?,slug=?,sort_order=?,is_active=?,
-                     meta_title=?,meta_description=?,meta_keywords=? WHERE id=?'
+                     meta_title=?,meta_description=?,meta_keywords=?,listing_description=? WHERE id=?'
                 )->execute([$parentId,$name,$slug,$_POST['sort_order'],isset($_POST['active'])?1:0,
-                    trim($_POST['meta_title']),trim($_POST['meta_description']),trim($_POST['meta_keywords']),$id]);
+                    trim($_POST['meta_title']),trim($_POST['meta_description']),trim($_POST['meta_keywords']),
+                    trim($_POST['listing_description'] ?? '') ?: null,$id]);
             }
         } else {
             $pdo->prepare(
-                'INSERT INTO categories(parent_id,name,slug,image,sort_order,is_active,meta_title,meta_description,meta_keywords)
-                 VALUES(?,?,?,?,?,?,?,?,?)'
+                'INSERT INTO categories(parent_id,name,slug,image,sort_order,is_active,meta_title,meta_description,meta_keywords,listing_description)
+                 VALUES(?,?,?,?,?,?,?,?,?,?)'
             )->execute([$parentId,$name,$slug,$image,$_POST['sort_order'],1,
-                trim($_POST['meta_title']),trim($_POST['meta_description']),trim($_POST['meta_keywords'])]);
+                trim($_POST['meta_title']),trim($_POST['meta_description']),trim($_POST['meta_keywords']),
+                trim($_POST['listing_description'] ?? '') ?: null]);
         }
         flash('success', 'Category saved.');
         redirect('admin/categories.php');
@@ -169,6 +172,16 @@ include __DIR__.'/../includes/admin-header.php';
         <div class="ap-field ap-form-wide">
           <label class="ap-label">Meta description</label>
           <textarea class="ap-textarea" name="meta_description"><?= e($edit['meta_description'] ?? '') ?></textarea>
+        </div>
+      </div>
+
+      <div class="ap-section-title">Listing page content</div>
+      <div class="ap-form-grid">
+        <div class="ap-field ap-form-wide">
+          <label class="ap-label">Listing description</label>
+          <textarea class="ap-textarea" name="listing_description" rows="4"
+                    placeholder="Shown in a box above the footer on this category's listing page. Leave blank to hide the box."><?= e($edit['listing_description'] ?? '') ?></textarea>
+          <span class="ap-hint">Longer, customer-facing description displayed above the footer on the category page. If empty, no box is shown.</span>
         </div>
       </div>
 
