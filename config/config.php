@@ -1,9 +1,22 @@
 <?php
 declare(strict_types=1);
 const APP_NAME='Aapki Grocery';
-const BASE_URL='http://localhost/aapkigrocery/';
-const DB_HOST='localhost'; const DB_NAME='aapki_grocery'; const DB_USER='root'; const DB_PASS='';
-const GOOGLE_CLIENT_ID=''; const GOOGLE_CLIENT_SECRET=''; const FACEBOOK_APP_ID=''; const FACEBOOK_APP_SECRET='';
+
+// ── Local overrides (secrets, per-environment DB/OAuth) ──────────────
+// config/config.local.php is git-ignored. It may define() any of the
+// constants below (BASE_URL, DB_*, GOOGLE_*, FACEBOOK_*) to override the
+// safe defaults here without committing secrets to the repository.
+if (is_file(__DIR__.'/config.local.php')) { require __DIR__.'/config.local.php'; }
+
+if(!defined('BASE_URL')) define('BASE_URL','http://localhost/aapkigrocery/');
+if(!defined('DB_HOST'))  define('DB_HOST','localhost');
+if(!defined('DB_NAME'))  define('DB_NAME','aapki_grocery');
+if(!defined('DB_USER'))  define('DB_USER','root');
+if(!defined('DB_PASS'))  define('DB_PASS','');
+if(!defined('GOOGLE_CLIENT_ID'))     define('GOOGLE_CLIENT_ID','');
+if(!defined('GOOGLE_CLIENT_SECRET')) define('GOOGLE_CLIENT_SECRET','');
+if(!defined('FACEBOOK_APP_ID'))      define('FACEBOOK_APP_ID','');
+if(!defined('FACEBOOK_APP_SECRET'))  define('FACEBOOK_APP_SECRET','');
 if(session_status()!==PHP_SESSION_ACTIVE){session_set_cookie_params(['httponly'=>true,'secure'=>(!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off'),'samesite'=>'Lax']);session_start();}
 date_default_timezone_set('Asia/Kolkata');
 function e(?string $v):string{return htmlspecialchars($v??'',ENT_QUOTES,'UTF-8');}

@@ -1,6 +1,22 @@
 <?php
 require_once __DIR__.'/config/db.php'; $pdo=db();
-if($_SERVER['REQUEST_METHOD']==='POST' && verify_csrf($_POST['csrf']??null)){
+
+// ── Add a new delivery address directly from checkout ──
+if($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['add_address']) && verify_csrf($_POST['csrf']??null)){
+  if(!is_logged_in()){flash('error','Please sign in first.');redirect('login.php?return=cart/');}
+  $uid=user_id();
+  $type=in_array($_POST['address_type']??'Home',['Home','Office','Other'],true)?$_POST['address_type']:'Home';
+  $isDefault=!empty($_POST['is_default'])?1:0;
+  if($isDefault){$pdo->prepare('UPDATE addresses SET is_default=0 WHERE user_id=?')->execute([$uid]);}
+  $us=$pdo->prepare('SELECT first_name,last_name,name,phone FROM users WHERE id=?');$us->execute([$uid]);$uu=$us->fetch();
+  $fullName=trim((($uu['first_name']??'').' '.($uu['last_name']??'')))?:($uu['name']??'');
+  $st=$pdo->prepare('INSERT INTO addresses(user_id,label,name,phone,apartment_no,apartment_name,area,landmark,address_line,city,state,pincode,address_type,is_default) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+  $st->execute([$uid,$type,$fullName,trim($_POST['phone']??$uu['phone']??''),trim($_POST['apartment_no']??''),trim($_POST['apartment_name']??''),trim($_POST['area']??''),trim($_POST['landmark']??''),trim($_POST['street_details']??''),trim($_POST['city']??''),trim($_POST['state']??''),trim($_POST['pincode']??''),$type,$isDefault]);
+  flash('success','Delivery address added.');
+  redirect('cart/');
+}
+
+if($_SERVER['REQUEST_METHOD']==='POST' && !isset($_POST['add_address']) && verify_csrf($_POST['csrf']??null)){
   if(!is_logged_in()){flash('error','Please login before placing your order.');redirect('login.php?return=cart/');}
   $items=json_decode($_POST['cart_json']??'[]',true) ?: []; $address=(int)($_POST['address_id']??0); $coupon=trim($_POST['coupon']??''); $payment=in_array($_POST['payment_method']??'cod',['cod','razorpay'],true)?$_POST['payment_method']:'cod'; $pointsUsed=max(0,(int)($_POST['points_used']??0)); $err='';
   $as=$pdo->prepare('SELECT * FROM addresses WHERE id=? AND user_id=?');$as->execute([$address,user_id()]);$addr=$as->fetch(); if(!$addr)$err='Please select a delivery address.';
@@ -19,10 +35,25 @@ $addresses=[];$userPoints=0;if(is_logged_in()){$st=$pdo->prepare('SELECT * FROM 
 <section class="container page"><div class="section-head"><div><span class="eyebrow">YOUR BASKET</span><h1>Cart & checkout</h1><p class="hint">Review your basket, choose delivery and go directly to payment.</p></div><a class="btn" href="<?=url()?>">Continue shopping</a></div>
 <?php if($err): ?><div class="alert"><?=e($err)?></div><?php endif; ?>
 <div id="cart-root" class="cart-checkout-layout"><div class="cart-main"><div class="panel"><div id="cartItems"><p class="hint">Loading your basket…</p></div></div>
-<?php if(is_logged_in()): ?><form method="post" id="orderForm" class="panel checkout-panel"><input type="hidden" name="csrf" value="<?=e(csrf_token())?>"><input type="hidden" name="cart_json" id="cartJson"><h2>Delivery details</h2><?php if($addresses): ?><div class="address-options"><?php foreach($addresses as $a): ?><label class="address-choice"><input type="radio" name="address_id" value="<?=$a['id']?>" <?=$a['is_default']?'checked':''?>><span><b><?=e($a['address_type']??$a['label'])?></b> <?=($a['is_default']?'<small class="default-badge">Default</small>':'')?><br><?=e($a['apartment_no'])?> <?=e($a['apartment_name'])?>, <?=e($a['area'])?><br><?=e($a['address_line'])?>, <?=e($a['city'])?> - <?=e($a['pincode'])?></span></label><?php endforeach; ?></div><?php else: ?><div class="empty-mini">No delivery address saved. <a href="<?=url('account/#addresses')?>">Add an address</a></div><?php endif; ?><a class="btn" href="<?=url('account/#addresses')?>">+ Add / manage address</a>
+<?php if(is_logged_in()): ?><form method="post" id="orderForm" class="panel checkout-panel"><input type="hidden" name="csrf" value="<?=e(csrf_token())?>"><input type="hidden" name="cart_json" id="cartJson"><h2>Delivery details</h2><?php if($addresses): ?><div class="address-options"><?php foreach($addresses as $a): ?><label class="address-choice"><input type="radio" name="address_id" value="<?=$a['id']?>" <?=$a['is_default']?'checked':''?>><span><b><?=e($a['address_type']??$a['label'])?></b> <?=($a['is_default']?'<small class="default-badge">Default</small>':'')?><br><?=e($a['apartment_no'])?> <?=e($a['apartment_name'])?>, <?=e($a['area'])?><br><?=e($a['address_line'])?>, <?=e($a['city'])?> - <?=e($a['pincode'])?></span></label><?php endforeach; ?></div><?php else: ?><div class="empty-mini">No delivery address saved yet. Add one below to continue.</div><?php endif; ?>
+<details class="add-address-inline" <?=$addresses?'':'open'?>>
+  <summary class="btn">+ Add another delivery address</summary>
+  <form method="post" class="address-form" style="margin-top:12px;">
+    <input type="hidden" name="csrf" value="<?=e(csrf_token())?>">
+    <input type="hidden" name="add_address" value="1">
+    <div class="field-grid"><label>Apartment / House No.<input name="apartment_no" required></label><label>Apartment name<input name="apartment_name"></label></div>
+    <div class="field-grid"><label>Area<input name="area" required></label><label>Landmark<input name="landmark"></label></div>
+    <label>Street / address details<input name="street_details" required></label>
+    <div class="field-grid"><label>City<input name="city" value="Delhi" required></label><label>State<input name="state" value="Delhi" required></label></div>
+    <div class="field-grid"><label>Pincode<input name="pincode" inputmode="numeric" required></label><label>Phone number<input name="phone" required></label></div>
+    <div class="radio-row"><span>Type</span><label><input type="radio" name="address_type" value="Home" checked> Home</label><label><input type="radio" name="address_type" value="Office"> Office</label><label><input type="radio" name="address_type" value="Other"> Other</label></div>
+    <label class="check-row"><input type="checkbox" name="is_default" value="1" <?=empty($addresses)?'checked':''?>> Set as default</label>
+    <button class="btn btn-primary">Save address</button>
+  </form>
+</details>
 <div class="field-grid compact"><label>Delivery slot<select name="delivery_slot"><option>Any available slot</option><option>7 AM - 10 AM</option><option>10 AM - 1 PM</option><option>5 PM - 8 PM</option><option>8 PM - 10 PM</option></select></label><label>Payment method<div class="payment-options"><label><input type="radio" name="payment_method" value="cod" checked> COD</label><label><input type="radio" name="payment_method" value="razorpay"> UPI / Online</label></div></label></div>
 <div class="coupon-points"><div><label>Coupon code<div class="input-action"><input name="coupon" placeholder="Enter coupon"><button type="button" class="btn" id="applyCoupon">Apply</button></div></label></div><div><label>Points to redeem (<?=number_format($userPoints)?> available)<input name="points_used" type="number" min="0" step="1" value="0"></label></div></div>
-<button class="btn btn-primary pay-btn" id="payBtn">Go to payment →</button></form><?php else: ?><div class="panel login-checkout"><h2>Login to checkout</h2><p class="hint">Sign in to select a delivery address and continue to payment.</p><a class="btn btn-primary" href="<?=url('login.php?return=cart/') ?>">Continue with Gmail / Login</a></div><?php endif; ?></div>
+<button class="btn btn-primary pay-btn" id="payBtn">Go to payment →</button></form><?php else: ?><div class="panel login-checkout"><h2>Sign in to place your order</h2><p class="hint">Your basket is saved. Continue with Google to check out in seconds, then add your delivery address.</p><a class="social-btn google-btn" href="<?=url('auth/google.php?return=cart/')?>"><span class="social-ico" aria-hidden="true">G</span><span>Continue with Google</span></a><p class="hint" style="margin-top:12px;">Prefer email? <a href="<?=url('register.php?return=cart/')?>">Create an account</a> or <a href="<?=url('login.php?return=cart/')?>">login</a>.</p></div><?php endif; ?></div>
 <aside class="panel cart-summary"><h2>Order summary</h2><div class="summary-row"><span>Subtotal</span><b id="cartSubtotal">₹0.00</b></div><div class="summary-row"><span>Handling charge <button type="button" class="info-tip" id="handlingInfo" aria-label="Handling charge information">i</button></span><b id="cartHandling">₹0.00</b></div><div id="handlingTip" class="tooltip-box" role="tooltip">A small handling charge helps cover packing, sorting and order processing.</div><div class="summary-row"><span>Delivery</span><b id="cartDelivery">₹0.00</b></div><div class="summary-row total"><span>Total</span><b id="cartTotal">₹0.00</b></div><p class="hint">Taxes and final payment amount are confirmed before payment.</p></aside></div></section>
 <script>document.getElementById('orderForm')?.addEventListener('submit',e=>{document.getElementById('cartJson').value=localStorage.getItem('aapki_cart_v2')||'[]';const c=JSON.parse(document.getElementById('cartJson').value||'[]');if(!c.length){e.preventDefault();alert('Your cart is empty.');}});document.getElementById('handlingInfo')?.addEventListener('click',()=>document.getElementById('handlingTip').classList.toggle('show'));document.getElementById('applyCoupon')?.addEventListener('click',()=>{document.getElementById('orderForm').requestSubmit();});</script>
 <?php include __DIR__.'/includes/footer.php'; ?>

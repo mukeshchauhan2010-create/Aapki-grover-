@@ -1,0 +1,7 @@
+# Local secrets / environment overrides — NEVER commit
+config/config.local.php
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.log
