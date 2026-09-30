@@ -33,6 +33,7 @@ CREATE TABLE `addresses` (
   `label` varchar(50) DEFAULT 'Home',
   `name` varchar(120) NOT NULL,
   `phone` varchar(20) NOT NULL,
+  `alt_phone` varchar(20) DEFAULT NULL,
   `apartment_no` varchar(120) DEFAULT NULL,
   `apartment_name` varchar(160) DEFAULT NULL,
   `area` varchar(160) DEFAULT NULL,

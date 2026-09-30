@@ -10,8 +10,8 @@ if($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['add_address']) && verify
   if($isDefault){$pdo->prepare('UPDATE addresses SET is_default=0 WHERE user_id=?')->execute([$uid]);}
   $us=$pdo->prepare('SELECT first_name,last_name,name,phone FROM users WHERE id=?');$us->execute([$uid]);$uu=$us->fetch();
   $fullName=trim((($uu['first_name']??'').' '.($uu['last_name']??'')))?:($uu['name']??'');
-  $st=$pdo->prepare('INSERT INTO addresses(user_id,label,name,phone,apartment_no,apartment_name,area,landmark,address_line,city,state,pincode,address_type,is_default) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-  $st->execute([$uid,$type,$fullName,trim($_POST['phone']??$uu['phone']??''),trim($_POST['apartment_no']??''),trim($_POST['apartment_name']??''),trim($_POST['area']??''),trim($_POST['landmark']??''),trim($_POST['street_details']??''),trim($_POST['city']??''),trim($_POST['state']??''),trim($_POST['pincode']??''),$type,$isDefault]);
+  $st=$pdo->prepare('INSERT INTO addresses(user_id,label,name,phone,alt_phone,apartment_no,apartment_name,area,landmark,address_line,city,state,pincode,address_type,is_default) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+  $st->execute([$uid,$type,$fullName,trim($_POST['phone']??$uu['phone']??''),preg_replace('/\D+/','',$_POST['alt_phone']??'')?:null,trim($_POST['apartment_no']??''),trim($_POST['apartment_name']??''),trim($_POST['area']??''),trim($_POST['landmark']??''),trim($_POST['street_details']??''),trim($_POST['city']??''),trim($_POST['state']??''),trim($_POST['pincode']??''),$type,$isDefault]);
   flash('success','Delivery address added.');
   redirect('cart/');
 }
@@ -35,7 +35,7 @@ $addresses=[];$userPoints=0;if(is_logged_in()){$st=$pdo->prepare('SELECT * FROM 
 <section class="container page"><div class="section-head"><div><span class="eyebrow">YOUR BASKET</span><h1>Cart & checkout</h1><p class="hint">Review your basket, choose delivery and go directly to payment.</p></div><a class="btn" href="<?=url()?>">Continue shopping</a></div>
 <?php if($err): ?><div class="alert"><?=e($err)?></div><?php endif; ?>
 <div id="cart-root" class="cart-checkout-layout"><div class="cart-main"><div class="panel"><div id="cartItems"><p class="hint">Loading your basket…</p></div></div>
-<?php if(is_logged_in()): ?><form method="post" id="orderForm" class="panel checkout-panel"><input type="hidden" name="csrf" value="<?=e(csrf_token())?>"><input type="hidden" name="cart_json" id="cartJson"><h2>Delivery details</h2><?php if($addresses): ?><div class="address-options"><?php foreach($addresses as $a): ?><label class="address-choice"><input type="radio" name="address_id" value="<?=$a['id']?>" <?=$a['is_default']?'checked':''?>><span><b><?=e($a['address_type']??$a['label'])?></b> <?=($a['is_default']?'<small class="default-badge">Default</small>':'')?><br><?=e($a['apartment_no'])?> <?=e($a['apartment_name'])?>, <?=e($a['area'])?><br><?=e($a['address_line'])?>, <?=e($a['city'])?> - <?=e($a['pincode'])?></span></label><?php endforeach; ?></div><?php else: ?><div class="empty-mini">No delivery address saved yet. Add one below to continue.</div><?php endif; ?>
+<?php if(is_logged_in()): ?><form method="post" id="orderForm" class="panel checkout-panel"><input type="hidden" name="csrf" value="<?=e(csrf_token())?>"><input type="hidden" name="cart_json" id="cartJson"><h2>Delivery details</h2><?php if($addresses): ?><div class="address-options"><?php foreach($addresses as $a): ?><label class="address-choice"><input type="radio" name="address_id" value="<?=$a['id']?>" <?=$a['is_default']?'checked':''?>><span><b><?=e($a['address_type']??$a['label'])?></b> <?=($a['is_default']?'<small class="default-badge">Default</small>':'')?><br><?=e($a['apartment_no'])?> <?=e($a['apartment_name'])?>, <?=e($a['area'])?><br><?=e($a['address_line'])?>, <?=e($a['city'])?> - <?=e($a['pincode'])?><br>📞 <?=e($a['phone'])?><?=!empty($a['alt_phone'])?' · Alt: '.e($a['alt_phone']):''?></span></label><?php endforeach; ?></div><?php else: ?><div class="empty-mini">No delivery address saved yet. Add one below to continue.</div><?php endif; ?>
 <details class="add-address-inline" <?=$addresses?'':'open'?>>
   <summary class="btn">+ Add another delivery address</summary>
   <form method="post" class="address-form" style="margin-top:12px;">
@@ -46,6 +46,7 @@ $addresses=[];$userPoints=0;if(is_logged_in()){$st=$pdo->prepare('SELECT * FROM 
     <label>Street / address details<input name="street_details" required></label>
     <div class="field-grid"><label>City<input name="city" value="Delhi" required></label><label>State<input name="state" value="Delhi" required></label></div>
     <div class="field-grid"><label>Pincode<input name="pincode" inputmode="numeric" required></label><label>Phone number<input name="phone" required></label></div>
+    <div class="field-grid"><label>Alternate mobile (optional)<input name="alt_phone" inputmode="numeric" placeholder="Backup number for delivery"></label></div>
     <div class="radio-row"><span>Type</span><label><input type="radio" name="address_type" value="Home" checked> Home</label><label><input type="radio" name="address_type" value="Office"> Office</label><label><input type="radio" name="address_type" value="Other"> Other</label></div>
     <label class="check-row"><input type="checkbox" name="is_default" value="1" <?=empty($addresses)?'checked':''?>> Set as default</label>
     <button class="btn btn-primary">Save address</button>
