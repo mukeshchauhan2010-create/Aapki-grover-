@@ -24,6 +24,7 @@ if($_SERVER['REQUEST_METHOD']==='POST' && verify_csrf($_POST['csrf']??null)){
 
     if($first===''){ $error='Please enter your first name.'; }
     elseif(!filter_var($email,FILTER_VALIDATE_EMAIL)){ $error='Please enter a valid email address.'; }
+    elseif(!preg_match('/^[6-9]\d{9}$/',$phone)){ $error='Please enter a valid 10-digit mobile number.'; }
     elseif(strlen($pass)<6){ $error='Password must be at least 6 characters.'; }
     elseif($pass!==$pass2){ $error='Passwords do not match.'; }
     else{
@@ -52,13 +53,13 @@ include __DIR__.'/includes/header.php';
 ?>
 <section class="container auth">
   <div class="auth-card">
-    <span class="eyebrow">CREATE ACCOUNT</span>
-    <h1>Join Aapki Grocery</h1>
-    <p class="auth-sub">Fastest with Google. Prefer email? Fill the form below.</p>
+    <div class="auth-logo"><img src="<?=url('assets/logo.png')?>" alt="<?=e(APP_NAME)?>"></div>
+
+    <p class="auth-lead">Login/ Sign up with Google.</p>
 
     <?php if($googleEnabled): ?>
-    <a class="social-btn google-btn" href="<?=url('auth/google.php'.$returnQS)?>">
-      <span class="social-ico" aria-hidden="true">G</span>
+    <a class="social-btn google-btn" href="<?=url('auth/google.php'.$returnQS)?>" data-google-login>
+      <img class="social-ico-img" src="<?=url('assets/images/google-g.svg')?>" alt="" aria-hidden="true">
       <span>Sign up with Google</span>
     </a>
     <div class="divider">or with email</div>
@@ -73,7 +74,7 @@ include __DIR__.'/includes/header.php';
         <label>Last name<input name="last_name" value="<?=e($old['last_name'])?>"></label>
       </div>
       <label>Email *<input type="email" name="email" value="<?=e($old['email'])?>" required></label>
-      <label>Mobile number<input name="phone" value="<?=e($old['phone'])?>" inputmode="numeric" placeholder="Optional"></label>
+      <label>Mobile number *<input name="phone" value="<?=e($old['phone'])?>" inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10" placeholder="10-digit mobile number" required></label>
       <div class="field-grid">
         <label>Password *<input type="password" name="password" minlength="6" required></label>
         <label>Confirm password *<input type="password" name="password_confirm" minlength="6" required></label>
@@ -82,6 +83,9 @@ include __DIR__.'/includes/header.php';
     </form>
 
     <p class="auth-hint">Already have an account? <a href="<?=url('login.php'.$returnQS)?>">Login</a></p>
+
+    <?php include __DIR__.'/includes/auth-legal.php'; ?>
   </div>
 </section>
+<?php include __DIR__.'/includes/auth-popup.php'; ?>
 <?php include __DIR__.'/includes/footer.php'; ?>

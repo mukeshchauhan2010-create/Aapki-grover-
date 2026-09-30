@@ -33,13 +33,13 @@ include __DIR__.'/includes/header.php';
 ?>
 <section class="container auth">
   <div class="auth-card">
-    <span class="eyebrow">WELCOME</span>
-    <h1>Continue to Aapki Grocery</h1>
-    <p class="auth-sub">Sign in or create your account in seconds — fastest with Google.</p>
+    <div class="auth-logo"><img src="<?=url('assets/logo.png')?>" alt="<?=e(APP_NAME)?>"></div>
 
-    <!-- ── Primary: social login ── -->
-    <a class="social-btn google-btn" href="<?=url('auth/google.php'.$returnQS)?>">
-      <span class="social-ico" aria-hidden="true">G</span>
+    <p class="auth-lead">Login/ Sign up with Google.</p>
+
+    <!-- ── Primary: social login (opens in popup) ── -->
+    <a class="social-btn google-btn" href="<?=url('auth/google.php'.$returnQS)?>" data-google-login>
+      <img class="social-ico-img" src="<?=url('assets/images/google-g.svg')?>" alt="" aria-hidden="true">
       <span>Continue with Google</span>
     </a>
     <?php if(!$googleEnabled): ?>
@@ -48,7 +48,6 @@ include __DIR__.'/includes/header.php';
 
     <?php if($error): ?><div class="alert"><?=e($error)?></div><?php endif; ?>
 
-    <div class="divider">new here?</div>
     <a class="btn full" href="<?=url('register.php'.$returnQS)?>">Create an account (email &amp; password)</a>
 
     <!-- ── Secondary: existing email / admin login ── -->
@@ -61,6 +60,9 @@ include __DIR__.'/includes/header.php';
         <button class="btn btn-primary full">Login</button>
       </form>
     </details>
+
+    <?php include __DIR__.'/includes/auth-legal.php'; ?>
   </div>
 </section>
+<?php include __DIR__.'/includes/auth-popup.php'; ?>
 <?php include __DIR__.'/includes/footer.php'; ?>
