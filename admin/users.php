@@ -1,9 +1,29 @@
 <?php
 require_once __DIR__.'/../config/db.php';
+require_once __DIR__.'/../lib/wallet.php';
 $pdo = db();
 if (!user_can($pdo, 'users')) redirect('admin/');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['csrf'] ?? null)) {
+    $action = $_POST['action'] ?? 'role';
+    if ($action === 'wallet') {
+        $targetId = (int)($_POST['id'] ?? 0);
+        $amount   = round((float)($_POST['amount'] ?? 0), 2);
+        $type     = in_array($_POST['wallet_type'] ?? 'credit', ['credit','debit'], true) ? $_POST['wallet_type'] : 'credit';
+        $reason   = trim($_POST['reason'] ?? '') ?: ($type === 'credit' ? 'Admin credit' : 'Admin debit');
+        if ($targetId > 0 && $amount > 0) {
+            try {
+                wallet_apply($pdo, $targetId, $amount, $type, $reason);
+                flash('success', ucfirst($type).' of ₹'.number_format($amount,2).' applied.');
+            } catch (Throwable $e) {
+                flash('error', $e->getMessage());
+            }
+        } else {
+            flash('error', 'Enter a valid amount.');
+        }
+        redirect('admin/users.php');
+    }
+    // Default: role update
     $pdo->prepare('UPDATE users SET role_slug=? WHERE id=?')
         ->execute([$_POST['role'], (int)$_POST['id']]);
     flash('success', 'Role updated.');
@@ -11,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['csrf'] ?? null)
 }
 
 $users = $pdo->query(
-    'SELECT id, name, email, role_slug, points, is_active, created_at
+    'SELECT id, name, email, role_slug, points, wallet_balance, is_active, created_at
      FROM users ORDER BY id DESC LIMIT 300'
 )->fetchAll();
 $roles = $pdo->query('SELECT slug, name FROM roles')->fetchAll();
@@ -36,9 +56,11 @@ include __DIR__.'/../includes/admin-header.php';
             <th>Email</th>
             <th>Role</th>
             <th>Points</th>
+            <th>Wallet (₹)</th>
             <th>Status</th>
             <th>Joined</th>
             <th>Change role</th>
+            <th>Wallet credit / debit</th>
           </tr>
         </thead>
         <tbody>
@@ -52,6 +74,7 @@ include __DIR__.'/../includes/admin-header.php';
               </span>
             </td>
             <td><?= number_format((int)$u['points']) ?></td>
+            <td><b>₹<?= number_format((float)($u['wallet_balance'] ?? 0), 2) ?></b></td>
             <td>
               <span class="ap-badge <?= $u['is_active'] ? 'ap-badge-green' : 'ap-badge-red' ?>">
                 <?= $u['is_active'] ? 'Active' : 'Inactive' ?>
@@ -70,6 +93,20 @@ include __DIR__.'/../includes/admin-header.php';
                   <?php endforeach; ?>
                 </select>
                 <button class="ap-btn ap-btn-sm ap-btn-primary">Save</button>
+              </form>
+            </td>
+            <td>
+              <form class="ap-inline" method="post" style="flex-wrap:wrap;gap:4px;">
+                <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+                <input type="hidden" name="id" value="<?= $u['id'] ?>">
+                <input type="hidden" name="action" value="wallet">
+                <select class="ap-select" name="wallet_type" style="min-width:84px;">
+                  <option value="credit">Credit</option>
+                  <option value="debit">Debit</option>
+                </select>
+                <input class="ap-input" name="amount" type="number" min="1" step="0.01" placeholder="₹" style="width:80px;">
+                <input class="ap-input" name="reason" placeholder="Reason" style="width:120px;">
+                <button class="ap-btn ap-btn-sm">Apply</button>
               </form>
             </td>
           </tr>

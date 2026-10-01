@@ -886,3 +886,24 @@ body.admin-body main { display: block; }
 .ap-badge-green{background:#e6f6e6;color:#1a7a34}
 .ap-badge-blue{background:#e6effb;color:#1f5fb0}
 .ap-badge-gray{background:#eee;color:#666}
+
+/* ============================================================
+   MY WALLET page
+   ============================================================ */
+.wallet-hero{display:flex;align-items:center;gap:16px;background:linear-gradient(120deg,#12652f,#1f8a3f);color:#fff;border-radius:16px;padding:22px 24px;box-shadow:0 12px 30px rgba(18,101,47,.22)}
+.wallet-hero-icon{width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.18);display:grid;place-items:center;font-size:28px}
+.wallet-hero small{display:block;font-size:12px;font-weight:700;letter-spacing:.05em;opacity:.9}
+.wallet-hero strong{font-size:30px}
+.wallet-topup-form{max-width:420px}
+.wallet-quick{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 10px}
+.wallet-quick-btn{padding:7px 12px;font-size:13px}
+.wallet-topup-disabled{background:var(--fresh);border-radius:12px;padding:16px 18px}
+.wallet-topup-disabled p{margin:0 0 6px}
+.wallet-txns{display:grid;gap:2px}
+.wallet-txn{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.wallet-txn:last-child{border-bottom:0}
+.wallet-txn-main b{display:block;font-size:14px}
+.wallet-txn-amt{text-align:right;font-weight:800;font-size:15px}
+.wallet-txn-amt small{display:block;font-weight:600;font-size:11px}
+.wallet-txn-amt.credit{color:#1a7a34}
+.wallet-txn-amt.debit{color:#c0392b}

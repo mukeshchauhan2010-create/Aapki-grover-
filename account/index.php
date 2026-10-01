@@ -12,14 +12,14 @@ if($_SERVER['REQUEST_METHOD']==='POST' && verify_csrf($_POST['csrf']??null)){
         $st->execute([$first,$last,trim($first.' '.$last),$phone?:null,$uid]); flash('success','Profile updated.'); redirect('account/');
     }
 }
-$walletBalance=(int)($u['points'] ?? 0);
+$walletBalance=(float)($u['wallet_balance'] ?? 0);
 $title='My Account | '.APP_NAME; include __DIR__.'/../includes/header.php';
 ?>
 <section class="container page account-page">
 <div class="account-shell">
 <aside class="account-sidebar panel">
   <div class="account-user"><div class="avatar"><?=e(strtoupper(substr(($u['first_name']??$u['name']??'U'),0,1)))?></div><div><b><?=e(trim(($u['first_name']??'').' '.($u['last_name']??''))?:$u['name'])?></b><small><?=e($u['email'])?></small></div></div>
-  <a class="wallet-link" href="<?=url('account/#wallet')?>">💰 My Wallet<span class="wallet-badge"><?=number_format($walletBalance)?></span></a>
+  <a class="wallet-link" href="<?=url('account/wallet.php')?>">💰 My Wallet<span class="wallet-badge">₹<?=number_format($walletBalance,0)?></span></a>
   <a class="active" href="<?=url('account/')?>">👤 My Profile</a>
   <a href="<?=url('account/orders.php')?>">📦 My Orders</a>
   <a href="#addresses">📍 My Addresses</a>
@@ -33,7 +33,7 @@ $title='My Account | '.APP_NAME; include __DIR__.'/../includes/header.php';
 <div class="field-grid"><label>Phone number <div class="phone-row"><input id="accountPhone" name="phone" value="<?=e($u['phone']??'')?>" inputmode="numeric"><button type="button" class="btn otp-btn" id="sendOtp">Verify OTP</button></div><small id="otpMsg" class="hint"></small></label><label>Email<input value="<?=e($u['email']??'')?>" disabled></label></div>
 <button class="btn btn-primary">Save changes</button></form></section>
 
-<section class="panel" id="wallet"><div class="wallet-card"><div class="wallet-icon">💰</div><div><small>MY WALLET</small><strong><?=number_format($walletBalance)?> Points</strong></div></div><p class="hint">Use your wallet balance at checkout when it reaches the minimum set by Aapki Grocery.</p></section>
+<section class="panel" id="wallet"><div class="wallet-card"><div class="wallet-icon">💰</div><div><small>MY WALLET</small><strong>₹<?=number_format($walletBalance,2)?></strong></div></div><p class="hint">Use your wallet balance to pay at checkout. <a href="<?=url('account/wallet.php')?>">Open My Wallet →</a></p></section>
 
 <section class="panel" id="addresses"><div class="panel-head"><div><span class="eyebrow">DELIVERY</span><h2>My addresses</h2></div></div>
 <?php if($addresses): ?>

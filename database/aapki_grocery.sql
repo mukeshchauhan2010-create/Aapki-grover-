@@ -251,6 +251,26 @@ CREATE TABLE `point_transactions` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `wallet_transactions`
+--
+
+CREATE TABLE `wallet_transactions` (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `type` enum('credit','debit') NOT NULL,
+  `reason` varchar(255) NOT NULL,
+  `order_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `balance_after` decimal(10,2) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_wt_user` (`user_id`),
+  KEY `idx_wt_order` (`order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `popups`
 --
 
@@ -663,6 +683,7 @@ CREATE TABLE `users` (
   `provider_id` varchar(190) DEFAULT NULL,
   `role_slug` varchar(80) NOT NULL DEFAULT 'customer',
   `points` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `wallet_balance` decimal(10,2) NOT NULL DEFAULT 0.00,
   `remember_token_hash` varchar(255) DEFAULT NULL,
   `referral_code` varchar(32) DEFAULT NULL,
   `referred_by` bigint(20) UNSIGNED DEFAULT NULL,

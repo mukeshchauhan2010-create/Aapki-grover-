@@ -19,7 +19,7 @@ if($orders){
     foreach($its->fetchAll() as $it){ $itemsByOrder[$it['order_id']][]=$it; }
 }
 
-$walletBalance=(int)($u['points'] ?? 0);
+$walletBalance=(float)($u['wallet_balance'] ?? 0);
 $title='My Orders | '.APP_NAME; include __DIR__.'/../includes/header.php';
 
 function order_status_class(string $s):string{
@@ -33,7 +33,7 @@ function order_status_class(string $s):string{
 <div class="account-shell">
 <aside class="account-sidebar panel">
   <div class="account-user"><div class="avatar"><?=e(strtoupper(substr(($u['first_name']??$u['name']??'U'),0,1)))?></div><div><b><?=e(trim(($u['first_name']??'').' '.($u['last_name']??''))?:$u['name'])?></b><small><?=e($u['email'])?></small></div></div>
-  <a class="wallet-link" href="<?=url('account/#wallet')?>">💰 My Wallet<span class="wallet-badge"><?=number_format($walletBalance)?></span></a>
+  <a class="wallet-link" href="<?=url('account/wallet.php')?>">💰 My Wallet<span class="wallet-badge">₹<?=number_format($walletBalance,0)?></span></a>
   <a href="<?=url('account/')?>">👤 My Profile</a>
   <a class="active" href="<?=url('account/orders.php')?>">📦 My Orders</a>
   <a href="<?=url('account/#addresses')?>">📍 My Addresses</a>
