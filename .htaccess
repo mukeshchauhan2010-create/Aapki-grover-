@@ -1,0 +1,23 @@
+# Aapki Grocery — pretty URL rewrites (Apache mod_rewrite)
+# If the site is deployed at domain root, change RewriteBase to /
+# and update BASE_URL in config/config.local.php accordingly.
+
+RewriteEngine On
+RewriteBase /aapkigrocery/
+
+# Serve existing files and directories (account/, admin/, api/, assets/, product/, uploads/) directly
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Static CMS pages -> page.php?slug=...   (MUST come before the generic category rule)
+RewriteRule ^(about-us|privacy-policy|terms-and-conditions|faqs|contact-us|farmers-connect)/?$ page.php?slug=$1 [L,QSA]
+
+# Cart & checkout
+RewriteRule ^cart/?$ cart.php [L,QSA]
+
+# Product detail: /category-slug/product-slug/
+RewriteRule ^([a-z0-9-]+)/([a-z0-9-]+)/?$ product/index.php?cat=$1&slug=$2 [L,QSA]
+
+# Category listing: /category-slug/
+RewriteRule ^([a-z0-9-]+)/?$ index.php?cat=$1 [L,QSA]

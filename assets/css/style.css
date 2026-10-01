@@ -866,9 +866,9 @@ body.admin-body main { display: block; }
 /* ============================================================
    ACCOUNT — wallet menu badge + wallet card + orders list
    ============================================================ */
-.wallet-link{display:flex;align-items:center;gap:8px}
-.wallet-badge{margin-left:auto;min-width:26px;height:26px;padding:0 8px;border-radius:999px;
-  background:var(--green);color:#fff;font-weight:800;font-size:12px;display:inline-grid;place-items:center}
+.account-sidebar>a.wallet-link{display:flex;align-items:center;gap:8px}
+.wallet-badge{margin-left:auto;min-width:26px;height:22px;padding:0 9px;border-radius:999px;
+  background:var(--green);color:#fff;font-weight:800;font-size:12px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;line-height:1}
 .wallet-card{display:flex;align-items:center;gap:14px}
 .wallet-icon{width:52px;height:52px;border-radius:14px;background:var(--fresh);display:grid;place-items:center;font-size:26px}
 .wallet-card small{display:block;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.04em}
@@ -907,3 +907,40 @@ body.admin-body main { display: block; }
 .wallet-txn-amt small{display:block;font-weight:600;font-size:11px}
 .wallet-txn-amt.credit{color:#1a7a34}
 .wallet-txn-amt.debit{color:#c0392b}
+
+/* ============================================================
+   CMS PAGES (about / terms / privacy / contact)
+   ============================================================ */
+.cms-head{margin:4px 0 18px}
+.cms-head h1{margin:6px 0 0}
+.cms-body.prose{line-height:1.75;color:#2b382e}
+.cms-body.prose h2{color:var(--green);margin:26px 0 8px;font-size:21px}
+.cms-body.prose h3{color:var(--ink);margin:18px 0 6px;font-size:17px}
+.cms-body.prose p{margin:0 0 12px}
+.cms-body.prose ul{margin:0 0 12px 20px}
+.cms-body.prose a{color:var(--green);font-weight:700}
+
+/* ============================================================
+   FAQ PAGE — JagsFresh-style category nav + accordion
+   ============================================================ */
+.faq-layout{display:grid;grid-template-columns:240px 1fr;gap:28px;align-items:start}
+.faq-nav{position:sticky;top:88px;padding:14px}
+.faq-nav-title{font-size:16px;font-weight:800;color:var(--green);padding:4px 8px 12px;border-bottom:1px solid var(--line)}
+.faq-nav-link{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 10px;border-radius:9px;color:#4f5c52;font-weight:700;font-size:14px}
+.faq-nav-link span{background:#edf7e7;color:var(--green);border-radius:999px;font-size:11px;padding:1px 8px;font-weight:800}
+.faq-nav-link:hover,.faq-nav-link.active{background:#edf7e7;color:var(--green)}
+.faq-group{margin-bottom:30px;scroll-margin-top:90px}
+.faq-group-title{color:var(--green);font-size:22px;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid var(--fresh)}
+.faq-item{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:#fff;overflow:hidden}
+.faq-item summary{cursor:pointer;list-style:none;padding:15px 44px 15px 16px;font-weight:700;color:var(--ink);position:relative}
+.faq-item summary::-webkit-details-marker{display:none}
+.faq-item summary::after{content:"+";position:absolute;right:16px;top:13px;font-size:22px;color:var(--green);font-weight:800;transition:transform .2s}
+.faq-item[open] summary::after{content:"−"}
+.faq-item[open] summary{background:#f8fbf6}
+.faq-answer{padding:4px 16px 16px;color:#4a5a4e;line-height:1.7}
+@media(max-width:820px){
+  .faq-layout{grid-template-columns:1fr}
+  .faq-nav{position:static;display:flex;flex-wrap:wrap;gap:6px;overflow:auto}
+  .faq-nav-title{flex-basis:100%;border-bottom:0;padding-bottom:6px}
+  .faq-nav-link{border:1px solid var(--line);white-space:nowrap}
+}

@@ -36,6 +36,8 @@ $_navItems = [
     ['inventory', '📊', 'Inventory',  url('admin/inventory.php'),    'catalog'],
     ['coupons',   '🎟️',  'Coupons',   url('admin/coupons.php'),      'settings'],
     ['content',   '🖼️',  'Content',   url('admin/content.php'),      'content'],
+    ['pages',     '📄', 'Pages',      url('admin/pages.php'),        'content'],
+    ['faqs',      '❓', 'FAQs',       url('admin/faqs.php'),         'content'],
     ['users',     '👥', 'Users',      url('admin/users.php'),        'users'],
     ['settings',  '⚙️',  'Settings',  url('admin/settings.php'),    'settings'],
 ];

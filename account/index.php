@@ -33,8 +33,6 @@ $title='My Account | '.APP_NAME; include __DIR__.'/../includes/header.php';
 <div class="field-grid"><label>Phone number <div class="phone-row"><input id="accountPhone" name="phone" value="<?=e($u['phone']??'')?>" inputmode="numeric"><button type="button" class="btn otp-btn" id="sendOtp">Verify OTP</button></div><small id="otpMsg" class="hint"></small></label><label>Email<input value="<?=e($u['email']??'')?>" disabled></label></div>
 <button class="btn btn-primary">Save changes</button></form></section>
 
-<section class="panel" id="wallet"><div class="wallet-card"><div class="wallet-icon">💰</div><div><small>MY WALLET</small><strong>₹<?=number_format($walletBalance,2)?></strong></div></div><p class="hint">Use your wallet balance to pay at checkout. <a href="<?=url('account/wallet.php')?>">Open My Wallet →</a></p></section>
-
 <section class="panel" id="addresses"><div class="panel-head"><div><span class="eyebrow">DELIVERY</span><h2>My addresses</h2></div></div>
 <?php if($addresses): ?>
 <?php foreach($addresses as $a): ?><div class="saved-address"><div><b><?=e($a['address_type']??$a['label'])?></b><?php if($a['is_default']): ?><span class="default-badge">Default</span><?php endif; ?><p><?=e($a['name'])?> · <?=e($a['phone'])?><?=!empty($a['alt_phone'])?' · Alt: '.e($a['alt_phone']):''?><br><?=e($a['apartment_no'])?> <?=e($a['apartment_name'])?>, <?=e($a['area'])?><br><?=e($a['address_line'])?> <?=e($a['landmark']?' · '.$a['landmark']:'')?><br><?=e($a['city'])?>, <?=e($a['state'])?> - <?=e($a['pincode'])?></p></div></div><?php endforeach; ?>

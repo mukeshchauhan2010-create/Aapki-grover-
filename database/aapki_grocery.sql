@@ -271,6 +271,43 @@ CREATE TABLE `wallet_transactions` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `pages`
+--
+
+CREATE TABLE `pages` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `slug` varchar(140) NOT NULL,
+  `title` varchar(200) NOT NULL,
+  `body` mediumtext DEFAULT NULL,
+  `meta_title` varchar(200) DEFAULT NULL,
+  `meta_description` varchar(320) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_page_slug` (`slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `faqs`
+--
+
+CREATE TABLE `faqs` (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `category` varchar(80) NOT NULL DEFAULT 'General',
+  `question` varchar(500) NOT NULL,
+  `answer` mediumtext NOT NULL,
+  `sort_order` int(11) NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_faq_cat` (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `popups`
 --
 
