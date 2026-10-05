@@ -1,9 +1,18 @@
 # Aapki Grocery — pretty URL rewrites (Apache mod_rewrite)
-# If the site is deployed at domain root, change RewriteBase to /
-# and update BASE_URL in config/config.local.php accordingly.
+#
+# This file works BOTH on:
+#   • localhost in a subfolder (http://localhost/aapkigrocery/)
+#   • a live domain at root (https://aapkigrocery.com/)
+# because it does NOT hardcode a RewriteBase — the %{REQUEST_URI} based
+# RewriteBase is auto-detected and targets are resolved relative to this
+# .htaccess directory.
 
+<IfModule mod_rewrite.c>
 RewriteEngine On
-RewriteBase /aapkigrocery/
+
+# Auto-detect the base path (works in a subfolder or at the domain root).
+RewriteCond %{REQUEST_URI}::$0 ^(/.+?)/(.*)::\2$
+RewriteRule ^(.*)$ - [E=BASE:%1]
 
 # Serve existing files and directories (account/, admin/, api/, assets/, product/, uploads/) directly
 RewriteCond %{REQUEST_FILENAME} -f [OR]
@@ -21,3 +30,4 @@ RewriteRule ^([a-z0-9-]+)/([a-z0-9-]+)/?$ product/index.php?cat=$1&slug=$2 [L,QS
 
 # Category listing: /category-slug/
 RewriteRule ^([a-z0-9-]+)/?$ index.php?cat=$1 [L,QSA]
+</IfModule>
