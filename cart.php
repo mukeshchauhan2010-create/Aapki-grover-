@@ -5,13 +5,27 @@ require_once __DIR__.'/config/db.php'; $pdo=db();
 if($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['add_address']) && verify_csrf($_POST['csrf']??null)){
   if(!is_logged_in()){flash('error','Please sign in first.');redirect('login.php?return=cart/');}
   $uid=user_id();
+  // ── Server-side validation: these fields are mandatory ──
+  $phoneDigits=preg_replace('/\D+/','',$_POST['phone']??'');
+  $altDigits=preg_replace('/\D+/','',$_POST['alt_phone']??'');
+  $pinDigits=preg_replace('/\D+/','',$_POST['pincode']??'');
+  $vErr=[];
+  if(trim($_POST['apartment_no']??'')==='')$vErr[]='Apartment / House No.';
+  if(trim($_POST['area']??'')==='')$vErr[]='Area';
+  if(trim($_POST['street_details']??'')==='')$vErr[]='Street / address details';
+  if(trim($_POST['city']??'')==='')$vErr[]='City';
+  if(trim($_POST['state']??'')==='')$vErr[]='State';
+  if(!preg_match('/^\d{6}$/',$pinDigits))$vErr[]='Pincode (6 digits)';
+  if(!preg_match('/^\d{10}$/',$phoneDigits))$vErr[]='Primary Mobile (10 digits)';
+  if(!preg_match('/^\d{10}$/',$altDigits))$vErr[]='Alternate mobile (10 digits)';
+  if($vErr){flash('error','Please fix: '.implode(', ',$vErr).'.');redirect('cart/');}
   $type=in_array($_POST['address_type']??'Home',['Home','Office','Other'],true)?$_POST['address_type']:'Home';
   $isDefault=!empty($_POST['is_default'])?1:0;
   if($isDefault){$pdo->prepare('UPDATE addresses SET is_default=0 WHERE user_id=?')->execute([$uid]);}
   $us=$pdo->prepare('SELECT first_name,last_name,name,phone FROM users WHERE id=?');$us->execute([$uid]);$uu=$us->fetch();
   $fullName=trim((($uu['first_name']??'').' '.($uu['last_name']??'')))?:($uu['name']??'');
   $st=$pdo->prepare('INSERT INTO addresses(user_id,label,name,phone,alt_phone,apartment_no,apartment_name,area,landmark,address_line,city,state,pincode,address_type,is_default) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-  $st->execute([$uid,$type,$fullName,trim($_POST['phone']??$uu['phone']??''),preg_replace('/\D+/','',$_POST['alt_phone']??'')?:null,trim($_POST['apartment_no']??''),trim($_POST['apartment_name']??''),trim($_POST['area']??''),trim($_POST['landmark']??''),trim($_POST['street_details']??''),trim($_POST['city']??''),trim($_POST['state']??''),trim($_POST['pincode']??''),$type,$isDefault]);
+  $st->execute([$uid,$type,$fullName,$phoneDigits,$altDigits?:null,trim($_POST['apartment_no']??''),trim($_POST['apartment_name']??''),trim($_POST['area']??''),trim($_POST['landmark']??''),trim($_POST['street_details']??''),trim($_POST['city']??''),trim($_POST['state']??''),$pinDigits,$type,$isDefault]);
   flash('success','Delivery address added.');
   redirect('cart/');
 }
@@ -40,26 +54,67 @@ $addresses=[];$userPoints=0;$userWallet=0.0;if(is_logged_in()){$st=$pdo->prepare
 <section class="container page"><div class="section-head"><div><span class="eyebrow">YOUR BASKET</span><h1>Cart & checkout</h1><p class="hint">Review your basket, choose delivery and go directly to payment.</p></div><a class="btn" href="<?=url()?>">Continue shopping</a></div>
 <?php if($err): ?><div class="alert"><?=e($err)?></div><?php endif; ?>
 <div id="cart-root" class="cart-checkout-layout"><div class="cart-main"><div class="panel"><div id="cartItems"><p class="hint">Loading your basket…</p></div></div>
-<?php if(is_logged_in()): ?><form method="post" id="orderForm" class="panel checkout-panel"><input type="hidden" name="csrf" value="<?=e(csrf_token())?>"><input type="hidden" name="cart_json" id="cartJson"><h2>Delivery details</h2><?php if($addresses): ?><div class="address-options"><?php foreach($addresses as $a): ?><label class="address-choice"><input type="radio" name="address_id" value="<?=$a['id']?>" <?=$a['is_default']?'checked':''?>><span><b><?=e($a['address_type']??$a['label'])?></b> <?=($a['is_default']?'<small class="default-badge">Default</small>':'')?><br><?=e($a['apartment_no'])?> <?=e($a['apartment_name'])?>, <?=e($a['area'])?><br><?=e($a['address_line'])?>, <?=e($a['city'])?> - <?=e($a['pincode'])?><br>📞 <?=e($a['phone'])?><?=!empty($a['alt_phone'])?' · Alt: '.e($a['alt_phone']):''?></span></label><?php endforeach; ?></div><?php else: ?><div class="empty-mini">No delivery address saved yet. Add one below to continue.</div><?php endif; ?>
+<?php if(is_logged_in()): ?>
+<div class="panel checkout-panel"><h2>Delivery details</h2>
+<?php if($addresses): ?>
+<form method="post" id="orderForm"><input type="hidden" name="csrf" value="<?=e(csrf_token())?>"><input type="hidden" name="cart_json" id="cartJson">
+<div class="address-options"><?php foreach($addresses as $a): ?><label class="address-choice"><input type="radio" name="address_id" value="<?=$a['id']?>" <?=$a['is_default']?'checked':''?>><span><b><?=e($a['address_type']??$a['label'])?></b> <?=($a['is_default']?'<small class="default-badge">Default</small>':'')?><br><?=e($a['apartment_no'])?> <?=e($a['apartment_name'])?>, <?=e($a['area'])?><br><?=e($a['address_line'])?>, <?=e($a['city'])?> - <?=e($a['pincode'])?><br>📞 <?=e($a['phone'])?><?=!empty($a['alt_phone'])?' · Alt: '.e($a['alt_phone']):''?></span></label><?php endforeach; ?></div>
+<div class="field-grid compact"><label>Delivery slot<select name="delivery_slot"><option>Any available slot</option><option>7 AM - 10 AM</option><option>10 AM - 1 PM</option><option>5 PM - 8 PM</option><option>8 PM - 10 PM</option></select></label><label>Payment method<div class="payment-options"><label><input type="radio" name="payment_method" value="cod" checked> COD</label><label><input type="radio" name="payment_method" value="razorpay"> UPI / Online</label><label><input type="radio" name="payment_method" value="wallet"> 💰 Wallet (₹<?=number_format($userWallet,2)?>)</label></div></label></div>
+<div class="coupon-points"><div><label>Coupon code<div class="input-action"><input name="coupon" placeholder="Enter coupon"><button type="button" class="btn" id="applyCoupon">Apply</button></div></label></div><div><label>Points to redeem (<?=number_format($userPoints)?> available)<input name="points_used" type="number" min="0" step="1" value="0"></label></div></div>
+<button class="btn btn-primary pay-btn" id="payBtn">Go to payment →</button></form>
+<?php else: ?><div class="empty-mini">No delivery address saved yet. Add one below to continue.</div><?php endif; ?>
+
+<?php /* Add-address form is a SEPARATE form (never nested inside orderForm). Shown below the address once one exists; shown open when none exists. */ ?>
 <details class="add-address-inline" <?=$addresses?'':'open'?>>
-  <summary class="btn">+ Add another delivery address</summary>
-  <form method="post" class="address-form" style="margin-top:12px;">
+  <?php if($addresses): ?><summary class="btn">+ Add another delivery option</summary><?php else: ?><summary class="btn">+ Add delivery address</summary><?php endif; ?>
+  <form method="post" class="address-form" id="addAddressForm" novalidate style="margin-top:12px;">
     <input type="hidden" name="csrf" value="<?=e(csrf_token())?>">
     <input type="hidden" name="add_address" value="1">
-    <div class="field-grid"><label>Apartment / House No.<input name="apartment_no" required></label><label>Apartment name<input name="apartment_name"></label></div>
-    <div class="field-grid"><label>Area<input name="area" required></label><label>Landmark<input name="landmark"></label></div>
-    <label>Street / address details<input name="street_details" required></label>
-    <div class="field-grid"><label>City<input name="city" value="Delhi" required></label><label>State<input name="state" value="Delhi" required></label></div>
-    <div class="field-grid"><label>Pincode<input name="pincode" inputmode="numeric" required></label><label>Phone number<input name="phone" required></label></div>
-    <div class="field-grid"><label>Alternate mobile (optional)<input name="alt_phone" inputmode="numeric" placeholder="Backup number for delivery"></label></div>
+    <div class="field-grid"><label>Apartment / House No. *<input name="apartment_no" required></label><label>Apartment name<input name="apartment_name"></label></div>
+    <div class="field-grid"><label>Area *<input name="area" required></label><label>Landmark<input name="landmark"></label></div>
+    <label>Street / address details *<input name="street_details" required></label>
+    <div class="field-grid"><label>City *<input name="city" value="Delhi" required></label><label>State *<input name="state" value="Delhi" required></label></div>
+    <div class="field-grid"><label>Pincode *<input name="pincode" inputmode="numeric" pattern="\d{6}" maxlength="6" required></label><label>Primary Mobile *<div class="phone-row"><input id="addrPhone" name="phone" inputmode="numeric" pattern="\d{10}" maxlength="10" required><button type="button" class="btn otp-btn" id="sendCartOtp">Verify OTP</button></div><small id="cartOtpMsg" class="hint"></small></label></div>
+    <div class="field-grid"><label>Alternate mobile *<input name="alt_phone" inputmode="numeric" pattern="\d{10}" maxlength="10" placeholder="Backup number for delivery" required></label></div>
     <div class="radio-row"><span>Type</span><label><input type="radio" name="address_type" value="Home" checked> Home</label><label><input type="radio" name="address_type" value="Office"> Office</label><label><input type="radio" name="address_type" value="Other"> Other</label></div>
     <label class="check-row"><input type="checkbox" name="is_default" value="1" <?=empty($addresses)?'checked':''?>> Set as default</label>
     <button class="btn btn-primary">Save address</button>
   </form>
 </details>
-<div class="field-grid compact"><label>Delivery slot<select name="delivery_slot"><option>Any available slot</option><option>7 AM - 10 AM</option><option>10 AM - 1 PM</option><option>5 PM - 8 PM</option><option>8 PM - 10 PM</option></select></label><label>Payment method<div class="payment-options"><label><input type="radio" name="payment_method" value="cod" checked> COD</label><label><input type="radio" name="payment_method" value="razorpay"> UPI / Online</label><label><input type="radio" name="payment_method" value="wallet"> 💰 Wallet (₹<?=number_format($userWallet,2)?>)</label></div></label></div>
-<div class="coupon-points"><div><label>Coupon code<div class="input-action"><input name="coupon" placeholder="Enter coupon"><button type="button" class="btn" id="applyCoupon">Apply</button></div></label></div><div><label>Points to redeem (<?=number_format($userPoints)?> available)<input name="points_used" type="number" min="0" step="1" value="0"></label></div></div>
-<button class="btn btn-primary pay-btn" id="payBtn">Go to payment →</button></form><?php else: ?><div class="panel login-checkout"><h2>Sign in to place your order</h2><p class="hint">Your basket is saved. Continue with Google to check out in seconds, then add your delivery address.</p><a class="social-btn google-btn" href="<?=url('auth/google.php?return=cart/')?>"><span class="social-ico" aria-hidden="true">G</span><span>Continue with Google</span></a><p class="hint" style="margin-top:12px;">Prefer email? <a href="<?=url('register.php?return=cart/')?>">Create an account</a> or <a href="<?=url('login.php?return=cart/')?>">login</a>.</p></div><?php endif; ?></div>
+</div>
+<?php else: ?><div class="panel login-checkout"><h2>Sign in to place your order</h2><p class="hint">Your basket is saved. Continue with Google to check out in seconds, then add your delivery address.</p><a class="social-btn google-btn" href="<?=url('auth/google.php?return=cart/')?>"><span class="social-ico" aria-hidden="true">G</span><span>Continue with Google</span></a><p class="hint" style="margin-top:12px;">Prefer email? <a href="<?=url('register.php?return=cart/')?>">Create an account</a> or <a href="<?=url('login.php?return=cart/')?>">login</a>.</p></div><?php endif; ?></div>
 <aside class="panel cart-summary"><h2>Order summary</h2><div class="summary-row"><span>Subtotal</span><b id="cartSubtotal">₹0.00</b></div><div class="summary-row"><span>Handling charge <button type="button" class="info-tip" id="handlingInfo" aria-label="Handling charge information">i</button></span><b id="cartHandling">₹0.00</b></div><div id="handlingTip" class="tooltip-box" role="tooltip">A small handling charge helps cover packing, sorting and order processing.</div><div class="summary-row"><span>Delivery</span><b id="cartDelivery">₹0.00</b></div><div class="summary-row total"><span>Total</span><b id="cartTotal">₹0.00</b></div><p class="hint">Taxes and final payment amount are confirmed before payment.</p></aside></div></section>
-<script>document.getElementById('orderForm')?.addEventListener('submit',e=>{document.getElementById('cartJson').value=localStorage.getItem('aapki_cart_v2')||'[]';const c=JSON.parse(document.getElementById('cartJson').value||'[]');if(!c.length){e.preventDefault();alert('Your cart is empty.');}});document.getElementById('handlingInfo')?.addEventListener('click',()=>document.getElementById('handlingTip').classList.toggle('show'));document.getElementById('applyCoupon')?.addEventListener('click',()=>{document.getElementById('orderForm').requestSubmit();});</script>
+<script>
+document.getElementById('orderForm')?.addEventListener('submit',e=>{
+  const cj=document.getElementById('cartJson');cj.value=localStorage.getItem('aapki_cart_v2')||'[]';
+  const c=JSON.parse(cj.value||'[]');
+  if(!c.length){e.preventDefault();alert('Your cart is empty.');return;}
+  const chosen=document.querySelector('#orderForm input[name="address_id"]:checked');
+  if(!chosen){e.preventDefault();alert('Please select a delivery address.');}
+});
+document.getElementById('handlingInfo')?.addEventListener('click',()=>document.getElementById('handlingTip').classList.toggle('show'));
+document.getElementById('applyCoupon')?.addEventListener('click',()=>{document.getElementById('orderForm')?.requestSubmit();});
+
+// ── Client-side validation for the add-address form ──
+const addForm=document.getElementById('addAddressForm');
+addForm?.addEventListener('submit',e=>{
+  const req={apartment_no:'Apartment / House No.',area:'Area',street_details:'Street / address details',city:'City',state:'State',pincode:'Pincode',phone:'Primary Mobile',alt_phone:'Alternate mobile'};
+  const errs=[];
+  for(const [n,label] of Object.entries(req)){
+    const el=addForm.elements[n];const v=(el?.value||'').trim();
+    if(!v){errs.push(label+' is required.');continue;}
+    if(n==='pincode'&&!/^\d{6}$/.test(v))errs.push('Pincode must be 6 digits.');
+    if((n==='phone'||n==='alt_phone')&&!/^\d{10}$/.test(v))errs.push(label+' must be a 10-digit mobile number.');
+  }
+  if(errs.length){e.preventDefault();alert(errs.join('\n'));}
+});
+
+// ── Verify OTP (primary mobile) — UI flow; wire to your SMS provider in api/ ──
+document.getElementById('sendCartOtp')?.addEventListener('click',()=>{
+  const phone=(document.getElementById('addrPhone').value||'').trim();
+  const m=document.getElementById('cartOtpMsg');
+  if(!/^\d{10}$/.test(phone)){m.textContent='Enter a valid 10-digit mobile number first.';return;}
+  m.textContent='OTP request prepared. Connect your SMS provider in the OTP API before live use.';
+});
+</script>
 <?php include __DIR__.'/includes/footer.php'; ?>
