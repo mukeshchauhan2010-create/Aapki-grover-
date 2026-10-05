@@ -27,15 +27,15 @@ $title='My Account | '.APP_NAME; include __DIR__.'/../includes/header.php';
   <a href="<?=url('logout.php')?>">↪ Logout</a>
 </aside>
 <main class="account-main">
-<section class="panel" id="profile"><div class="panel-head"><div><span class="eyebrow">MY PROFILE</span><h2>Personal details</h2></div></div>
+<section class="panel" id="profile"><div class="panel-head"><div><h2>Personal details</h2></div></div>
 <form method="post" class="account-form"><input type="hidden" name="csrf" value="<?=e(csrf_token())?>"><input type="hidden" name="profile" value="1">
 <div class="field-grid"><label>First name *<input name="first_name" value="<?=e($u['first_name']??$u['name']??'')?>" required></label><label>Last name<input name="last_name" value="<?=e($u['last_name']??'')?>"></label></div>
-<div class="field-grid"><label>Phone number <div class="phone-row"><input id="accountPhone" name="phone" value="<?=e($u['phone']??'')?>" inputmode="numeric"><button type="button" class="btn otp-btn" id="sendOtp">Verify OTP</button></div><small id="otpMsg" class="hint"></small></label><label>Email<input value="<?=e($u['email']??'')?>" disabled></label></div>
+<div class="field-grid"><label>Phone number <div class="phone-row"><input id="accountPhone" name="phone" value="<?=e($u['phone']??'')?>" inputmode="numeric"><button type="button" class="btn otp-btn" id="sendOtp">Verify OTP</button></div><small id="otpMsg" class="hint"></small></label><label>Email<input value="<?=e($u['email']??'')?>" readonly></label></div>
 <button class="btn btn-primary">Save changes</button></form></section>
 
-<section class="panel" id="addresses"><div class="panel-head"><div><span class="eyebrow">DELIVERY</span><h2>My addresses</h2></div></div>
+<section class="panel" id="addresses"><div class="panel-head"><div><span class="eyebrow">DELIVERY</span><h2>My addresses</h2><?php if(!empty($u['phone'])): ?><small class="hint">📞 Primary mobile: <?=e($u['phone'])?></small><?php endif; ?></div></div>
 <?php if($addresses): ?>
-<?php foreach($addresses as $a): ?><div class="saved-address"><div><b><?=e($a['address_type']??$a['label'])?></b><?php if($a['is_default']): ?><span class="default-badge">Default</span><?php endif; ?><p><?=e($a['name'])?> · <?=e($a['phone'])?><?=!empty($a['alt_phone'])?' · Alt: '.e($a['alt_phone']):''?><br><?=e($a['apartment_no'])?> <?=e($a['apartment_name'])?>, <?=e($a['area'])?><br><?=e($a['address_line'])?> <?=e($a['landmark']?' · '.$a['landmark']:'')?><br><?=e($a['city'])?>, <?=e($a['state'])?> - <?=e($a['pincode'])?></p></div></div><?php endforeach; ?>
+<?php foreach($addresses as $a): ?><div class="saved-address"><div><b><?=e($a['address_type']??$a['label'])?></b><?php if($a['is_default']): ?><span class="default-badge">Default</span><?php endif; ?><p><?=e($a['name'])?> · <?=e($a['phone']?:($u['phone']??''))?><?=!empty($a['alt_phone'])?' · Alt: '.e($a['alt_phone']):''?><br><?=e($a['apartment_no'])?> <?=e($a['apartment_name'])?>, <?=e($a['area'])?><br><?=e($a['address_line'])?> <?=e($a['landmark']?' · '.$a['landmark']:'')?><br><?=e($a['city'])?>, <?=e($a['state'])?> - <?=e($a['pincode'])?></p></div></div><?php endforeach; ?>
 <?php else: ?><p class="hint">No delivery address saved yet. You can add one during checkout.</p><?php endif; ?>
 </section>
 
