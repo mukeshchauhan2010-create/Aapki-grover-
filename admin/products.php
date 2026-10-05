@@ -32,7 +32,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['csrf'] ?? null)
             $name  = trim($_POST['name'] ?? '');
             $cat   = (int)$_POST['category_id'];
             $sku   = trim($_POST['sku'] ?? '');
-            $slug  = slugify($name).'-'.substr(sha1($sku ?: $name), 0, 6);
+
+            // Clean slug from the name; only append -1, -2, … if it already
+            // exists on another product (so URLs stay human-friendly).
+            $base = slugify($name);
+            $slug = $base;
+            $n = 1;
+            $chk = $pdo->prepare('SELECT COUNT(*) FROM products WHERE slug=? AND id<>?');
+            while (true) {
+                $chk->execute([$slug, $id]);
+                if ((int)$chk->fetchColumn() === 0) break;
+                $slug = $base.'-'.$n;
+                $n++;
+            }
+
             $image = $edit['image']     ?? null;
             $webp  = $edit['image_webp'] ?? null;
 

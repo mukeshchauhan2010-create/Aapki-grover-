@@ -954,3 +954,44 @@ body.admin-body main { display: block; }
 .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:8px}
 .btn-danger{background:#c0392b;color:#fff;border:0}
 .btn-danger:hover{background:#a93226}
+
+/* ============================================================
+   CART / CHECKOUT — polish + responsive + consistent buttons
+   ============================================================ */
+.order-form-inline{display:block}
+.btn-block{display:block;width:100%;text-align:center}
+.btn-outline{background:#fff;color:var(--green);border:1px solid var(--green)}
+.btn-outline:hover{background:var(--fresh)}
+/* Both primary action buttons match: same height, radius, weight */
+.checkout-panel .btn-primary.btn-block,
+.checkout-panel .add-address-inline .btn-primary.btn-block{min-height:50px;font-size:16px;border-radius:12px;margin-top:14px}
+
+.address-options{display:grid;gap:10px;margin-bottom:14px}
+.address-choice{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;transition:border-color .15s,background .15s}
+.address-choice:hover{border-color:var(--green)}
+.address-choice input:checked + span{color:var(--ink)}
+.address-choice:has(input:checked){border-color:var(--green);background:var(--fresh)}
+.address-choice input{margin-top:3px}
+
+.add-address-inline{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px}
+.add-address-inline>summary{list-style:none}
+.add-address-inline>summary::-webkit-details-marker{display:none}
+.address-form{margin-top:12px;display:grid;gap:12px}
+.address-form label{display:grid;gap:5px;font-size:13px;font-weight:700;color:var(--ink)}
+.address-form input{padding:11px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;width:100%}
+.address-form input:invalid:not(:placeholder-shown){border-color:#e0a3a3}
+.checkout-panel .field-grid{gap:12px}
+.checkout-panel h2{margin:0 0 14px}
+
+.cart-summary{align-self:start}
+
+/* Mobile tweaks */
+@media(max-width:600px){
+  .cart-checkout-layout{grid-template-columns:1fr;gap:14px}
+  .address-form .field-grid{grid-template-columns:1fr}
+  .checkout-panel .field-grid.compact{grid-template-columns:1fr}
+  .payment-options{flex-direction:column;gap:8px;align-items:flex-start}
+  .coupon-points{grid-template-columns:1fr}
+  .pay-btn{font-size:15px}
+  .cart-summary{position:static}
+}
