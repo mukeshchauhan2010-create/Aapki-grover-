@@ -2,31 +2,34 @@
 #
 # Works both on localhost in a subfolder (http://localhost/aapkigrocery/)
 # and on a live domain at root (https://aapkigrocery.com/).
-# No hardcoded RewriteBase — Apache resolves rule targets relative to this
-# .htaccess directory.
+
+# Disable MultiViews — content negotiation can conflict with mod_rewrite
+# and cause 500s / wrong routing for real directories like /admin/.
+<IfModule mod_negotiation.c>
+  Options -MultiViews
+</IfModule>
+
+# Default document for directory requests (serve index.php for /admin/, /account/, …)
+DirectoryIndex index.php index.html
 
 <IfModule mod_rewrite.c>
 RewriteEngine On
 
-# ── 1. Never rewrite real application directories ───────────────
-# These are served directly (account/, admin/, api/, product/, assets/,
-# uploads/, auth/, config/, includes/, lib/, tools/, database/).
-RewriteRule ^(account|admin|api|product|assets|uploads|auth|config|includes|lib|tools|database)(/|$) - [L]
-
-# ── 2. Never rewrite any request that maps to a real file or dir ─
+# 1) Serve any request that maps to a real file or directory, untouched.
+#    This makes /admin/, /account/, /api/, /assets/… work via DirectoryIndex.
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
-# ── 3. Static CMS pages -> page.php?slug=...  (before category rule) ──
+# 2) Static CMS pages -> page.php?slug=...  (before the generic category rule)
 RewriteRule ^(about-us|privacy-policy|terms-and-conditions|faqs|contact-us|farmers-connect)/?$ page.php?slug=$1 [L,QSA]
 
-# ── 4. Cart & checkout ──
+# 3) Cart & checkout
 RewriteRule ^cart/?$ cart.php [L,QSA]
 
-# ── 5. Product detail: /category-slug/product-slug/ ──
+# 4) Product detail: /category-slug/product-slug/
 RewriteRule ^([a-z0-9-]+)/([a-z0-9-]+)/?$ product/index.php?cat=$1&slug=$2 [L,QSA]
 
-# ── 6. Category listing: /category-slug/ ──
+# 5) Category listing: /category-slug/
 RewriteRule ^([a-z0-9-]+)/?$ index.php?cat=$1 [L,QSA]
 </IfModule>
