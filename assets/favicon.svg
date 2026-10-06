@@ -1,54 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- White rounded background -->
+  <rect width="120" height="120" rx="22" fill="#ffffff"/>
 
-  <!-- White background -->
-  <rect width="120" height="120" fill="#ffffff"/>
-
-  <!-- ═══════════════════════════════════
-       LETTER  a  (orange)
-       Centre x≈33, top y≈38, bottom y≈95
-  ════════════════════════════════════ -->
-  <text x="8" y="95"
+  <!-- ═══════════════ letter "a" — green ═══════════════ -->
+  <text x="6" y="92"
         font-family="Arial Black, Arial, Helvetica, sans-serif"
-        font-weight="900"
-        font-size="72"
-        fill="#F47920">a</text>
+        font-weight="900" font-size="78" fill="#1f8a37">a</text>
 
-  <!-- ═══════════════════════════════════
-       LETTER  g  (dark green)
-       Centre x≈87, top y≈38, bottom y≈105
-  ════════════════════════════════════ -->
-  <text x="60" y="95"
+  <!-- ═══════════════ letter "g" — orange ═══════════════ -->
+  <text x="54" y="92"
         font-family="Arial Black, Arial, Helvetica, sans-serif"
-        font-weight="900"
-        font-size="72"
-        fill="#2E7D32">g</text>
+        font-weight="900" font-size="78" fill="#F47920">g</text>
 
-  <!-- ═══════════════════════════════════
-       LEAF SPROUT over  a  (centre ~33)
-  ════════════════════════════════════ -->
-  <!-- stem -->
-  <line x1="33" y1="38" x2="33" y2="22"
-        stroke="#388E3C" stroke-width="4"
-        stroke-linecap="round"/>
-  <!-- left leaf — dark green, curves upper-left -->
-  <path d="M33,28 Q18,14 16,8 Q26,10 33,28Z"
-        fill="#388E3C"/>
-  <!-- right leaf — medium green, curves upper-right -->
-  <path d="M33,28 Q48,14 50,8 Q40,10 33,28Z"
-        fill="#66BB6A"/>
-
-  <!-- ═══════════════════════════════════
-       LEAF SPROUT over  g  (centre ~87)
-  ════════════════════════════════════ -->
-  <!-- stem -->
-  <line x1="87" y1="38" x2="87" y2="22"
-        stroke="#388E3C" stroke-width="4"
-        stroke-linecap="round"/>
-  <!-- left leaf -->
-  <path d="M87,28 Q72,14 70,8 Q80,10 87,28Z"
-        fill="#388E3C"/>
-  <!-- right leaf -->
-  <path d="M87,28 Q102,14 104,8 Q94,10 87,28Z"
-        fill="#66BB6A"/>
-
+  <!-- ═══════════════ two leaves sprouting from the "a" ═══════════════ -->
+  <g transform="translate(38,30)">
+    <!-- left leaf -->
+    <path d="M2 8 C-10 2 -16 -8 -8 -16 C2 -10 6 0 2 8 Z" fill="#3fae3f"/>
+    <!-- right leaf (bigger) -->
+    <path d="M4 6 C8 -10 22 -16 30 -10 C26 6 12 12 4 6 Z" fill="#2e9b2e"/>
+    <!-- little stem -->
+    <path d="M3 9 C3 2 4 -4 7 -9" stroke="#2e9b2e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  </g>
 </svg>

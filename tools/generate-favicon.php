@@ -1,212 +1,110 @@
 <?php
 /**
- * Aapki Grocery — favicon generator FINAL
+ * Aapki Grocery — favicon generator (GD)
  *
- * Design (matches the sample image exactly):
- *   - Bold lowercase "a" (orange #F47920) left half
- *   - Bold lowercase "g" (dark green #2E7D32) right half
- *   - Each letter has two leaves sprouting from its top-centre
- *     Left leaf  = dark green  #388E3C  (curves upper-left)
- *     Right leaf = light green #66BB6A  (curves upper-right)
- *   - Leaves are LEAF-SHAPED (pointed teardrop using bezier-style polygon)
- *   - Short thin stem connecting letter top to leaf base
+ * Design (matches the "ag" sample):
+ *   - Bold lowercase "a" in GREEN  (#1F8A37)
+ *   - Bold lowercase "g" in ORANGE (#F47920)
+ *   - Two green leaves sprouting from the TOP of the "a"
+ *   - White rounded-square background
  *
- * Run: C:\xampp\php\php.exe tools/generate-favicon.php
+ * Renders a 512px master with GD, then downsamples to every size.
+ *
+ * Run locally:  php tools/generate-favicon.php
+ *   (On Windows XAMPP:  C:\xampp\php\php.exe tools\generate-favicon.php)
  */
 
 $sizes  = [16, 32, 48, 64, 128, 180, 192, 512];
 $outDir = __DIR__ . '/../assets';
-$font   = 'C:/Windows/Fonts/arialbd.ttf';
 
-// ── Canvas ────────────────────────────────────────────────────
-const S = 512;   // master size — downsample to each target
-
-// ── Colours ───────────────────────────────────────────────────
-// orange, dark-green, leaf-dark, leaf-light, white
-$PAL = [
-    'orange' => [244, 121,  32],
-    'green'  => [ 46, 125,  50],
-    'leafD'  => [ 56, 142,  60],
-    'leafL'  => [102, 187, 106],
-    'white'  => [255, 255, 255],
+// Pick a heavy TTF font that exists on this machine.
+$fontCandidates = [
+    '/usr/share/fonts/google-noto/NotoSans-Black.ttf',
+    '/usr/share/fonts/google-noto/NotoSans-Bold.ttf',
+    '/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf',
+    'C:/Windows/Fonts/ariblk.ttf',
+    'C:/Windows/Fonts/arialbd.ttf',
 ];
+$font = null;
+foreach ($fontCandidates as $f) { if (is_file($f)) { $font = $f; break; } }
+if (!$font) { fwrite(STDERR, "No usable TTF font found.\n"); exit(1); }
 
-// ─────────────────────────────────────────────────────────────
-function alloc(GdImage $im, array $rgb): int {
-    return imagecolorallocate($im, $rgb[0], $rgb[1], $rgb[2]);
+const S = 512;
+$GREEN  = [31, 138, 55];
+$ORANGE = [244, 121, 32];
+$LEAFL  = [63, 174, 63];
+$LEAFD  = [46, 155, 46];
+
+function alloc(GdImage $im, array $c): int { return imagecolorallocate($im, $c[0], $c[1], $c[2]); }
+
+/** Draw a pointed leaf (teardrop) using a filled polygon of bezier samples. */
+function leaf(GdImage $im, float $cx, float $cy, float $len, float $ang, int $color): void {
+    // Build a simple symmetric leaf around the x-axis then rotate by $ang.
+    $pts = [];
+    $steps = 16;
+    // upper curve
+    for ($i = 0; $i <= $steps; $i++) { $t = $i/$steps; $x = $t*$len; $y = -sin($t*M_PI)*$len*0.33; $pts[] = [$x,$y]; }
+    // lower curve (back)
+    for ($i = $steps; $i >= 0; $i--) { $t = $i/$steps; $x = $t*$len; $y =  sin($t*M_PI)*$len*0.33; $pts[] = [$x,$y]; }
+    $poly = [];
+    foreach ($pts as [$x,$y]) {
+        $rx = $x*cos($ang) - $y*sin($ang);
+        $ry = $x*sin($ang) + $y*cos($ang);
+        $poly[] = $cx + $rx; $poly[] = $cy + $ry;
+    }
+    imagefilledpolygon($im, $poly, $color);
 }
 
-// ─────────────────────────────────────────────────────────────
-function buildMaster(string $font, array $PAL): GdImage
-{
-    $W  = S;
-    $im = imagecreatetruecolor($W, $W);
-    imagealphablending($im, true);
+function buildMaster(string $font, array $GREEN, array $ORANGE, array $LEAFL, array $LEAFD): GdImage {
+    $im = imagecreatetruecolor(S, S);
     imagesavealpha($im, true);
+    imagealphablending($im, true);
+    // transparent base
+    imagefill($im, 0, 0, imagecolorallocatealpha($im, 0, 0, 0, 127));
 
-    $cW  = alloc($im, $PAL['white']);
-    $cO  = alloc($im, $PAL['orange']);
-    $cG  = alloc($im, $PAL['green']);
-    $cLD = alloc($im, $PAL['leafD']);
-    $cLL = alloc($im, $PAL['leafL']);
+    // White rounded-square background
+    $white = imagecolorallocate($im, 255, 255, 255);
+    $r = 95;
+    imagefilledrectangle($im, $r, 0, S-$r, S, $white);
+    imagefilledrectangle($im, 0, $r, S, S-$r, $white);
+    foreach ([[$r,$r],[S-$r,$r],[$r,S-$r],[S-$r,S-$r]] as [$cx,$cy]) {
+        imagefilledellipse($im, $cx, $cy, $r*2, $r*2, $white);
+    }
 
-    imagefilledrectangle($im, 0, 0, $W - 1, $W - 1, $cW);
+    $green  = alloc($im, $GREEN);
+    $orange = alloc($im, $ORANGE);
+    $leafL  = alloc($im, $LEAFL);
+    $leafD  = alloc($im, $LEAFD);
 
-    // ── Font size ─────────────────────────────────────────────
-    // Large letters — fill 78% of canvas width
-    // Target: combined "ag" width ≈ 78% of W
-    // Start with fs=340 then measure and scale
-    $fs = 340;
+    // Letters: bold lowercase "a" (green) + "g" (orange)
+    $fs = 300;                       // font size
+    imagettftext($im, $fs, 0, 40,  380, $green,  $font, 'a');
+    imagettftext($im, $fs, 0, 250, 380, $orange, $font, 'g');
 
-    $bbA = imagettfbbox($fs, 0, $font, 'a');
-    $bbG = imagettfbbox($fs, 0, $font, 'g');
-
-    $aW = abs($bbA[2] - $bbA[0]);
-    $gW = abs($bbG[2] - $bbG[0]);
-    $aH = abs($bbA[5]);
-    $gH = abs($bbG[5]);
-
-    // Scale font so combined width = 76% of canvas
-    $targetW = (int)($W * 0.76);
-    $scale   = $targetW / ($aW + $gW);
-    $fs      = (int)($fs * $scale);
-
-    // Re-measure with scaled font
-    $bbA = imagettfbbox($fs, 0, $font, 'a');
-    $bbG = imagettfbbox($fs, 0, $font, 'g');
-    $aW  = abs($bbA[2] - $bbA[0]);
-    $gW  = abs($bbG[2] - $bbG[0]);
-    $aH  = abs($bbA[5]);
-    $gH  = abs($bbG[5]);
-
-    // ── Layout ────────────────────────────────────────────────
-    // Letter tops at y = 36% of canvas — leaves get top 32% + 4% gap
-    $letterTopY = (int)($W * 0.35);
-    $baselineA  = $letterTopY + $aH;
-    $baselineG  = $letterTopY + $gH;
-
-    // Centre "ag" horizontally, no gap
-    $totalW = $aW + $gW;
-    $startX = (int)(($W - $totalW) / 2);
-
-    $aX = $startX - $bbA[0];
-    $gX = $startX + $aW - $bbG[0];
-
-    // ── Render letters ────────────────────────────────────────
-    imagettftext($im, $fs, 0, $aX, $baselineA, $cO, $font, 'a');
-    imagettftext($im, $fs, 0, $gX, $baselineG, $cG, $font, 'g');
-
-    // ── Horizontal centres of each glyph ──────────────────────
-    $aCX = $aX + $bbA[0] + (int)($aW / 2);
-    $gCX = $gX + $bbG[0] + (int)($gW / 2);
-
-    // ── Tops of glyphs ────────────────────────────────────────
-    $aTopY = $baselineA + $bbA[5];   // = letterTopY
-    $gTopY = $baselineG + $bbG[5];
-
-    // ── Draw leaf sprouts ─────────────────────────────────────
-    // Stem attaches at exact top of each letter
-    drawSprout($im, $aCX, $aTopY, $cLD, $cLL);
-    drawSprout($im, $gCX, $gTopY, $cLD, $cLL);
+    // Two leaves on top of the "a" — stem centered over the "a" bowl (x≈165)
+    $baseX = 165; $baseY = 118;
+    leaf($im, $baseX, $baseY, 140, deg2rad(-22), $leafL);  // right, bigger, lighter
+    leaf($im, $baseX, $baseY, 105, deg2rad(208), $leafD);  // left, smaller, darker
+    // short stem connecting the leaves to the letter top
+    $stem = imagecolorallocate($im, 46, 155, 46);
+    imagesetthickness($im, 11);
+    imageline($im, $baseX, 165, $baseX, $baseY, $stem);
 
     return $im;
 }
 
-/**
- * Draw a leaf sprout at the top-centre of a letter.
- *
- * @param GdImage $im
- * @param int     $cx    horizontal centre of the letter
- * @param int     $topY  y-coordinate of the letter top
- * @param int     $cLD   dark leaf colour
- * @param int     $cLL   light leaf colour
- */
-function drawSprout(GdImage $im, int $cx, int $topY,
-                    int $cLD, int $cLL): void
-{
-    // ── dimensions ────────────────────────────────────────────
-    $stemLen   = 70;    // longer stem — lifts leaves fully above letters
-    $leafLen   = 82;    // leaf long axis
-    $leafWid   = 30;    // leaf short axis
-    $leafAngle = 62;    // wider V spread to match sample
+$master = buildMaster($font, $GREEN, $ORANGE, $LEAFL, $LEAFD);
 
-    // Stem: from letterTop going straight UP
-    $stemTop = $topY - $stemLen;
-    $stemBot = $topY;
-    imagesetthickness($im, 8);
-    imageline($im, $cx, $stemBot, $cx, $stemTop + 4, $cLD);
-    imagesetthickness($im, 1);
-
-    // Branch point = stem top
-    $bx = $cx;
-    $by = $stemTop;
-
-    // Left leaf: dark green, tilts upper-left
-    //   Centre of leaf ellipse offset from branch point
-    $lAngle = deg2rad(-$leafAngle);  // from vertical
-    $lCX = $bx + (int)($leafLen * 0.40 * sin($lAngle));
-    $lCY = $by + (int)($leafLen * 0.40 * cos($lAngle));
-    drawLeaf($im, $lCX, $lCY, -(90 - $leafAngle), $leafLen, $leafWid, $cLD);
-
-    // Right leaf: light green, tilts upper-right
-    $rAngle = deg2rad($leafAngle);
-    $rCX = $bx + (int)($leafLen * 0.40 * sin($rAngle));
-    $rCY = $by + (int)($leafLen * 0.40 * cos($rAngle));
-    drawLeaf($im, $rCX, $rCY,  (90 - $leafAngle), $leafLen, $leafWid, $cLL);
-}
-
-/**
- * Draw a pointed leaf shape (tapered ellipse) as a filled polygon.
- * The leaf tapers to a point at both ends (like a real leaf).
- */
-function drawLeaf(GdImage $im, int $cx, int $cy, float $deg,
-                  int $rx, int $ry, int $color): void
-{
-    $steps = 60;
-    $rad   = deg2rad($deg);
-    $pts   = [];
-
-    for ($i = 0; $i < $steps; $i++) {
-        $t = 2 * M_PI * $i / $steps;
-
-        // Pointy-leaf shape: narrow the ry at the ends using sin envelope
-        $envelope = abs(sin($t));   // 0 at tips, 1 at widest point
-        $ex = $rx * cos($t);
-        $ey = $ry * $envelope * sin($t);
-
-        // Rotate
-        $pts[] = (int)($cx + $ex * cos($rad) - $ey * sin($rad));
-        $pts[] = (int)($cy + $ex * sin($rad) + $ey * cos($rad));
-    }
-
-    imagefilledpolygon($im, $pts, $steps, $color);
-}
-
-// ─────────────────────────────────────────────────────────────
-// Generate all sizes
-// ─────────────────────────────────────────────────────────────
-$master = buildMaster($font, $PAL);
-
-foreach ($sizes as $size) {
-    $out = imagecreatetruecolor($size, $size);
-    $bg  = imagecolorallocate($out, 255, 255, 255);
-    imagefill($out, 0, 0, $bg);
-    imagecopyresampled($out, $master, 0, 0, 0, 0,
-                       $size, $size, S, S);
-    imagepng($out, "$outDir/favicon-{$size}.png", 9);
+foreach ($sizes as $sz) {
+    $out = imagecreatetruecolor($sz, $sz);
+    imagesavealpha($out, true);
+    imagealphablending($out, false);
+    imagecopyresampled($out, $master, 0,0,0,0, $sz,$sz, S,S);
+    imagepng($out, $outDir."/favicon-$sz.png");
     imagedestroy($out);
-    echo "✓  favicon-{$size}.png\n";
+    echo "✓ favicon-$sz.png\n";
 }
-
-// Also save a preview 256px
-$prev = imagecreatetruecolor(256, 256);
-$bg   = imagecolorallocate($prev, 255, 255, 255);
-imagefill($prev, 0, 0, $bg);
-imagecopyresampled($prev, $master, 0, 0, 0, 0, 256, 256, S, S);
-imagepng($prev, "$outDir/favicon-preview.png", 6);
-imagedestroy($prev);
-echo "✓  favicon-preview.png (256px — for visual check)\n";
-
-copy("$outDir/favicon-32.png", "$outDir/favicon.png");
-imagedestroy($master);
-echo "\nAll done! Open http://localhost/aapkigrocery/tools/favicon-preview.html to verify.\n";
+// Default favicon.png = 32
+copy($outDir.'/favicon-32.png', $outDir.'/favicon.png');
+echo "✓ favicon.png (32)\n";
+echo "Done. (favicon.svg is hand-authored separately.)\n";
