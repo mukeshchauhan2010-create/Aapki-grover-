@@ -995,3 +995,83 @@ body.admin-body main { display: block; }
   .pay-btn{font-size:15px}
   .cart-summary{position:static}
 }
+
+/* ============================================================
+   RESPONSIVE HARDENING — consistent across Android & iPhone
+   (appended last so it reliably overrides earlier rules)
+   Breakpoints: 1024 tablet · 768 small tablet · 600 phone · 400 small phone
+   ============================================================ */
+
+/* ---- Global guards: stop sideways scroll, make media fluid ---- */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{max-width:100%;overflow-x:hidden}
+img,svg,video{max-width:100%;height:auto}
+/* iOS safe-area padding for sticky header / fixed elements */
+.site-header{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+/* Tables never force the page wider than the screen */
+.table-wrap,.ap-table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* ---- Tablet ---- */
+@media(max-width:1024px){
+  .product-grid{grid-template-columns:repeat(3,1fr)}
+  .cat-grid{grid-template-columns:repeat(4,1fr)}
+  .footer-grid{grid-template-columns:2fr 1fr 1fr}
+  .product-detail{grid-template-columns:1fr 1fr;gap:30px}
+}
+
+/* ---- Small tablet / large phone ---- */
+@media(max-width:768px){
+  .container{width:min(1180px,94%)}
+  .nav{flex-wrap:wrap;gap:10px 14px}
+  .brand{min-width:0}
+  .search{order:3;flex-basis:100%}
+  .product-grid{grid-template-columns:repeat(3,1fr);gap:12px}
+  .footer-grid{grid-template-columns:1fr 1fr;gap:24px}
+  .footer-brand{grid-column:1/-1}
+  .product-detail{grid-template-columns:1fr;gap:20px}
+  .account-shell{grid-template-columns:1fr}
+  .cart-checkout-layout{grid-template-columns:1fr}
+  .faq-layout{grid-template-columns:1fr}
+}
+
+/* ---- Phone ---- */
+@media(max-width:600px){
+  .container{width:92%}
+  .categories,.products-section,.page,.admin,.product-detail{padding:30px 0}
+  .section-head{flex-wrap:wrap;gap:10px}
+  .section-head h1,.section-head h2{font-size:22px}
+  .product-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .product-image{height:150px}
+  .product-info{padding:10px}
+  .product-info h3{font-size:13px;margin:5px 0 8px}
+  .price-row{margin:8px 0}
+  .price-row strong{font-size:16px}
+  .cat-card{flex-basis:46vw}
+  /* Keep header label visible but compact */
+  .account-trigger .account-label{display:inline}
+  .nav-actions{gap:12px}
+  /* Prevent iOS zoom-on-focus: inputs must be >=16px */
+  input,select,textarea{font-size:16px}
+  .panel,.empty,.auth-card{padding:18px}
+  .cart-summary{position:static}
+  h1{font-size:clamp(28px,8vw,40px)}
+  h2{font-size:24px}
+}
+
+/* ---- Small phone (iPhone SE, Galaxy S, etc.) ---- */
+@media(max-width:400px){
+  .product-grid{gap:8px}
+  .product-image{height:130px}
+  .cat-card{flex-basis:60vw}
+  .nav{gap:8px}
+  .brand img{width:135px}
+  .payment-options{flex-direction:column;align-items:flex-start;gap:6px}
+  .btn{padding:10px 12px}
+  .wallet-hero strong{font-size:24px}
+}
+
+/* ---- Touch target minimum (accessibility, consistent taps) ---- */
+@media(hover:none){
+  .btn,.add-to-cart,.aisle-arrow,.slider-dot,.qty-controls button,.account-trigger{min-height:40px}
+}
