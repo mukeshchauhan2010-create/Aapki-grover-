@@ -72,7 +72,14 @@ if (!$dryRun || isset($_POST['preview'])) {
         $catId = $cats[$cat_slug] ?? null;
         if (!$catId) { $errors[] = "Row $total ($name): category '$cat_slug' not found — skipped."; $skipped++; continue; }
 
-        $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $name)).'-'.substr(sha1($sku), 0, 6);
+        // Clean, human-friendly slug — append -1,-2… only if it already exists.
+        $base = function_exists('slugify') ? slugify($name) : trim(preg_replace('/[^a-z0-9]+/i','-',strtolower($name)),'-');
+        $slug = $base; $sn = 1;
+        $slchk = $pdo->prepare('SELECT COUNT(*) FROM products WHERE slug=?');
+        while (true) { $slchk->execute([$slug]); if ((int)$slchk->fetchColumn() === 0) break; $slug = $base.'-'.$sn; $sn++; }
+
+        // If no image given, default to a file named after the slug in uploads/products.
+        if (!$image) { $image = 'uploads/products/'.$slug.'.webp'; }
 
         // Check duplicate SKU
         $dup = $pdo->prepare('SELECT id FROM products WHERE sku=? LIMIT 1');
