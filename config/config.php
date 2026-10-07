@@ -19,6 +19,12 @@ if(!defined('FACEBOOK_APP_ID'))      define('FACEBOOK_APP_ID','');
 if(!defined('FACEBOOK_APP_SECRET'))  define('FACEBOOK_APP_SECRET','');
 if(session_status()!==PHP_SESSION_ACTIVE){session_set_cookie_params(['httponly'=>true,'secure'=>(!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off'),'samesite'=>'Lax']);session_start();}
 date_default_timezone_set('Asia/Kolkata');
+
+// ── PHP 7 polyfills for PHP 8 string helpers (safe on PHP 8 — only defined if missing) ──
+if(!function_exists('str_starts_with')){function str_starts_with(string $haystack,string $needle):bool{return $needle===''||strncmp($haystack,$needle,strlen($needle))===0;}}
+if(!function_exists('str_ends_with')){function str_ends_with(string $haystack,string $needle):bool{return $needle===''||($needle!==''&&substr($haystack,-strlen($needle))===$needle);}}
+if(!function_exists('str_contains')){function str_contains(string $haystack,string $needle):bool{return $needle===''||strpos($haystack,$needle)!==false;}}
+
 function e(?string $v):string{return htmlspecialchars($v??'',ENT_QUOTES,'UTF-8');}
 function url(string $p=''):string{return BASE_URL.ltrim($p,'/');}
 function asset_url(?string $p):string{if(!$p)return url('assets/images/products/no-product-basket.png');return preg_match('~^https?://~i',$p)?$p:url($p);}

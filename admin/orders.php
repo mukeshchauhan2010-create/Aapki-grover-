@@ -27,22 +27,21 @@ include __DIR__.'/../includes/admin-header.php';
 
 // Badge helper
 function order_badge(string $s): string {
-    return match($s) {
-        'delivered'        => 'ap-badge-green',
-        'placed'           => 'ap-badge-blue',
-        'confirmed','packed' => 'ap-badge-blue',
-        'out_for_delivery' => 'ap-badge-amber',
-        'cancelled','returned' => 'ap-badge-red',
-        default            => 'ap-badge-gray',
-    };
+    switch ($s) {
+        case 'delivered':                       return 'ap-badge-green';
+        case 'placed': case 'confirmed': case 'packed': return 'ap-badge-blue';
+        case 'out_for_delivery':                return 'ap-badge-amber';
+        case 'cancelled': case 'returned':      return 'ap-badge-red';
+        default:                                return 'ap-badge-gray';
+    }
 }
 function payment_badge(string $s): string {
-    return match($s) {
-        'paid'    => 'ap-badge-green',
-        'pending' => 'ap-badge-amber',
-        'failed'  => 'ap-badge-red',
-        default   => 'ap-badge-gray',
-    };
+    switch ($s) {
+        case 'paid':    return 'ap-badge-green';
+        case 'pending': return 'ap-badge-amber';
+        case 'failed':  return 'ap-badge-red';
+        default:        return 'ap-badge-gray';
+    }
 }
 ?>
 

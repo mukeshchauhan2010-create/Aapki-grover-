@@ -176,13 +176,18 @@ include __DIR__.'/../includes/admin-header.php';
             <td>₹<?= number_format((float)$r['total'], 2) ?></td>
             <td>
               <?php
-              $sc = match($r['status']) {
-                'delivered'        => 'ap-badge-green',
-                'placed','confirmed','packed' => 'ap-badge-blue',
-                'out_for_delivery' => 'ap-badge-amber',
-                'cancelled','returned' => 'ap-badge-red',
-                default            => 'ap-badge-gray',
-              };
+              switch ($r['status']) {
+                case 'delivered':
+                  $sc = 'ap-badge-green'; break;
+                case 'placed': case 'confirmed': case 'packed':
+                  $sc = 'ap-badge-blue'; break;
+                case 'out_for_delivery':
+                  $sc = 'ap-badge-amber'; break;
+                case 'cancelled': case 'returned':
+                  $sc = 'ap-badge-red'; break;
+                default:
+                  $sc = 'ap-badge-gray';
+              }
               ?>
               <span class="ap-badge <?= $sc ?>"><?= e($r['status']) ?></span>
             </td>

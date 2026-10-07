@@ -2,12 +2,13 @@
 declare(strict_types=1);
 
 function image_upload_error(int $code): string {
-    return match ($code) {
-        UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'Image is too large.',
-        UPLOAD_ERR_PARTIAL => 'Image upload was incomplete.',
-        UPLOAD_ERR_NO_FILE => 'Please select an image.',
-        default => 'Image upload failed.'
-    };
+    switch ($code) {
+        case UPLOAD_ERR_INI_SIZE:
+        case UPLOAD_ERR_FORM_SIZE: return 'Image is too large.';
+        case UPLOAD_ERR_PARTIAL:   return 'Image upload was incomplete.';
+        case UPLOAD_ERR_NO_FILE:   return 'Please select an image.';
+        default:                   return 'Image upload failed.';
+    }
 }
 
 function sanitize_svg(string $svg): string {
@@ -55,12 +56,12 @@ function save_product_image(array $file, string $uploadDir, string $publicDir): 
         return ['source'=>$publicDir.'/'.$svgName, 'webp'=>$webpCreated ? $publicDir.'/'.$id.'.webp' : $publicDir.'/'.$svgName, 'filename'=>$svgName];
     }
     if (!function_exists('imagecreatefromjpeg')) throw new RuntimeException('PHP GD extension is required for image processing.');
-    $src = match ($mime) {
-        'image/jpeg' => @imagecreatefromjpeg($tmp),
-        'image/png' => @imagecreatefrompng($tmp),
-        'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($tmp) : false,
-        default => false
-    };
+    switch ($mime) {
+        case 'image/jpeg': $src = @imagecreatefromjpeg($tmp); break;
+        case 'image/png':  $src = @imagecreatefrompng($tmp); break;
+        case 'image/webp': $src = function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($tmp) : false; break;
+        default:           $src = false;
+    }
     if (!$src) throw new RuntimeException('Could not decode the image.');
     $w = imagesx($src); $h = imagesy($src); $max = 1600;
     $scale = min(1, $max / max($w, $h)); $nw = max(1, (int)round($w*$scale)); $nh = max(1, (int)round($h*$scale));
