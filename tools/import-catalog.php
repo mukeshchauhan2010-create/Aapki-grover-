@@ -81,13 +81,8 @@ if (!$dryRun || isset($_POST['preview'])) {
         // If no image given, default to a file named after the slug in uploads/products.
         if (!$image) { $image = 'uploads/products/'.$slug.'.webp'; }
 
-        // Check duplicate SKU
-        $dup = $pdo->prepare('SELECT id FROM products WHERE sku=? LIMIT 1');
-        $dup->execute([$sku]);
-        if ($dup->fetchColumn()) {
-            $results[] = ['status'=>'skip','name'=>$name,'sku'=>$sku,'msg'=>'SKU already exists'];
-            $skipped++; continue;
-        }
+        // NOTE: duplicate-SKU checking is intentionally disabled — SKUs are
+        // managed manually. Every valid row is imported.
 
         // Parse variants
         $variants = [];
