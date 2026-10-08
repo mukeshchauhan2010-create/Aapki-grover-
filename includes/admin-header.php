@@ -32,6 +32,7 @@ $_navItems = [
     ['dashboard', '🏠', 'Dashboard',  url('admin/'),                 null],
     ['orders',    '📦', 'Orders',     url('admin/orders.php'),       'orders'],
     ['products',  '🥬', 'Products',   url('admin/products.php'),     'catalog'],
+    ['import',    '⬆️', 'Import',     url('admin/import.php'),       'catalog'],
     ['categories','🗂️',  'Categories', url('admin/categories.php'),  'catalog'],
     ['inventory', '📊', 'Inventory',  url('admin/inventory.php'),    'catalog'],
     ['coupons',   '🎟️',  'Coupons',   url('admin/coupons.php'),      'settings'],

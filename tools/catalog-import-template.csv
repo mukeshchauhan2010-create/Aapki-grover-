@@ -1,3 +1,3 @@
-name,category_slug,sku,description,search_terms,image,mrp,price,stock,variants
-Fresh Potatoes,fresh-vegetables,AG-VEG-001,Fresh potatoes,"potato,aalu,alu,आलू,fresh potato",,50,39,200,"100 GM|200 GM|500 GM|1 KG"
-Fresh Bananas,fresh-fruits,AG-FRU-001,Fresh bananas,"banana,kela,केला,fresh banana",,80,65,100,"3 PCS|6 PCS|12 PCS"
+name,category_slug,sku,description,search_terms,image,image_url,mrp,price,stock,variants
+Fresh Potatoes,fresh-vegetables,AG-VEG-001,Fresh potatoes,"potato,aalu,alu,आलू",,,50,39,200,"100 GM|200 GM|500 GM|1 KG"
+Fresh Bananas,fresh-fruits,AG-FRU-001,Fresh bananas,"banana,kela,केला,fresh banana",,,80,65,100,"3 PCS|6 PCS|12 PCS"
