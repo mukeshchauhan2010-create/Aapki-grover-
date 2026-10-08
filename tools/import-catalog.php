@@ -78,7 +78,7 @@ if (!$dryRun || isset($_POST['preview'])) {
         $slchk = $pdo->prepare('SELECT COUNT(*) FROM products WHERE slug=?');
         while (true) { $slchk->execute([$slug]); if ((int)$slchk->fetchColumn() === 0) break; $slug = $base.'-'.$sn; $sn++; }
 
-        // If no image given, default to a file named after the slug in uploads/products.
+        // If no image given, default to a file named after the slug (webp) in uploads/products.
         if (!$image) { $image = 'uploads/products/'.$slug.'.webp'; }
 
         // NOTE: duplicate-SKU checking is intentionally disabled — SKUs are

@@ -46,9 +46,9 @@ foreach ($rows as $r) {
     } else {
         imagestring($im, 5, 20, (int)($size*0.78), $name, $green);
     }
-    imagepng($im, $outDir.'/'.$slug.'.png');
+    imagewebp($im, $outDir.'/'.$slug.'.webp', 90);
     imagedestroy($im);
-    echo "✓ uploads/products/$slug.png\n";
+    echo "✓ uploads/products/$slug.webp\n";
     $made++;
 }
 echo "\nGenerated $made placeholder images.\n";
