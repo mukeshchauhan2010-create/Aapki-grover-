@@ -41,7 +41,14 @@ if($_SERVER['REQUEST_METHOD']==='POST' && !isset($_POST['add_address']) && verif
   if(!$err){$pdo->beginTransaction();try{foreach($items as $i){$vid=(int)($i['variant_id']??0);$qty=(float)($i['qty']??0);if($vid<1||$qty<=0)continue;$s=$pdo->prepare('SELECT v.*,p.id product_id,p.name FROM product_variants v JOIN products p ON p.id=v.product_id WHERE v.id=? AND p.is_active=1 FOR UPDATE');$s->execute([$vid]);$v=$s->fetch();if(!$v||$qty>(float)$v['stock'])throw new RuntimeException('One or more products are out of stock.');$valid[]=['v'=>$v,'qty'=>$qty];$subtotal+=$qty*(float)$v['price'];}if(!$valid)throw new RuntimeException('Your cart is empty.');
     $discount=0;if($coupon){$cs=$pdo->prepare('SELECT * FROM coupons WHERE code=? AND is_active=1 AND (start_at IS NULL OR start_at<=NOW()) AND (end_at IS NULL OR end_at>=NOW()) AND (usage_limit IS NULL OR used_count<usage_limit)');$cs->execute([$coupon]);$c=$cs->fetch();if(!$c||$subtotal<(float)$c['min_order'])throw new RuntimeException('Invalid or inapplicable coupon.');$discount=$c['type']==='percent'?min($subtotal*(float)$c['value']/100,(float)($c['max_discount']??PHP_INT_MAX)):(float)$c['value'];$discount=min($discount,$subtotal);}
     $pointDiscount=0;$balance=(int)$pdo->query('SELECT points FROM users WHERE id='.(int)user_id())->fetchColumn();if($pointsUsed){if(!setting_bool($pdo,'points_enabled')||!setting_bool($pdo,'redeem_enabled')||$pointsUsed<((int)setting($pdo,'redeem_min_points','100'))||$pointsUsed>$balance)throw new RuntimeException('Invalid points redemption.');$pointDiscount=min($pointsUsed*(float)setting($pdo,'point_value_rupees','1'),max(0,$subtotal-$discount));$discount+=$pointDiscount;}
-    $handling=(float)setting($pdo,'handling_charge','15');$delivery=max(0,$subtotal-$discount)>499?0:40;$total=max(0,$subtotal-$discount)+$handling+$delivery;$orderNo='AG'.date('ymdHis').random_int(10,99);$earn=setting_bool($pdo,'points_enabled')?(int)floor($subtotal/100*(float)setting($pdo,'points_per_100','1')):0;
+    $handling=(float)setting($pdo,'handling_charge','15');$delivery=max(0,$subtotal-$discount)>499?0:40;$total=max(0,$subtotal-$discount)+$handling+$delivery;
+    // Order number: AG + yy + mm + dd + daily incrementing sequence (4 digits).
+    $orderPrefix='AG'.date('ymd');
+    $seqStmt=$pdo->prepare('SELECT COALESCE(MAX(CAST(SUBSTRING(order_no,9) AS UNSIGNED)),0)+1 FROM orders WHERE order_no LIKE ?');
+    $seqStmt->execute([$orderPrefix.'%']);
+    $seq=(int)$seqStmt->fetchColumn();
+    $orderNo=$orderPrefix.str_pad((string)$seq,4,'0',STR_PAD_LEFT);
+    $earn=setting_bool($pdo,'points_enabled')?(int)floor($subtotal/100*(float)setting($pdo,'points_per_100','1')):0;
     // Wallet payment: ensure sufficient balance before creating the order.
     $payStatus='pending';
     if($payment==='wallet'){$wbal=wallet_balance($pdo,(int)user_id());if($wbal + 0.0001 < $total)throw new RuntimeException('Insufficient wallet balance. Available ₹'.number_format($wbal,2).', order total ₹'.number_format($total,2).'.');$payStatus='paid';}
