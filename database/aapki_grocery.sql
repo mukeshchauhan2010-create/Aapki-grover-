@@ -308,6 +308,25 @@ CREATE TABLE `faqs` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `service_pincodes`
+--
+
+CREATE TABLE `service_pincodes` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `pincode` varchar(10) NOT NULL,
+  `label` varchar(120) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_pincode` (`pincode`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `service_pincodes` (`pincode`, `label`, `is_active`) VALUES
+('110084', 'Burari, Delhi', 1);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `popups`
 --
 

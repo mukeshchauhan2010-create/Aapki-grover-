@@ -40,6 +40,7 @@ $_navItems = [
     ['pages',     '📄', 'Pages',      url('admin/pages.php'),        'content'],
     ['faqs',      '❓', 'FAQs',       url('admin/faqs.php'),         'content'],
     ['users',     '👥', 'Users',      url('admin/users.php'),        'users'],
+    ['pincodes',  '📍', 'Service Pincodes', url('admin/pincodes.php'), 'settings'],
     ['settings',  '⚙️',  'Settings',  url('admin/settings.php'),    'settings'],
 ];
 

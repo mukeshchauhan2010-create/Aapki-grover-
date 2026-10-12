@@ -1,5 +1,68 @@
 window.AAPKI=window.AAPKI||{base:'/aapkigrocery/'};
 const CART_KEY='aapki_cart_v2';
+
+/* ============================================================
+   SERVICEABILITY (zip/pincode) — gate cart & checkout by area
+   ============================================================ */
+const AG_BASE=(window.AAPKI&&window.AAPKI.base)||'/aapkigrocery/';
+const SERVED=((window.AAPKI&&window.AAPKI.servedPincodes)||[]).map(String);
+const GEO_KEY='aapki_geo_v1'; // {pincode, served, status, ts}
+
+function agGeoGet(){try{return JSON.parse(localStorage.getItem(GEO_KEY)||'null');}catch(_){return null;}}
+function agGeoSet(o){try{localStorage.setItem(GEO_KEY,JSON.stringify(o));}catch(_){}}
+
+/* Auto-closing popup (5s), NO close button, cannot be dismissed early. */
+function agPopup(message, opts){
+  opts=opts||{};
+  var secs=opts.secs||5;
+  var wrap=document.createElement('div');
+  wrap.className='ag-modal';
+  wrap.innerHTML='<div class="ag-modal-card"><div class="ag-modal-bar"><span></span></div>'+
+    '<div class="ag-modal-body">'+message+'</div>'+
+    '<div class="ag-modal-count">Closing in <b>'+secs+'</b>s…</div></div>';
+  document.body.appendChild(wrap);
+  var bar=wrap.querySelector('.ag-modal-bar span');
+  var cnt=wrap.querySelector('.ag-modal-count b');
+  // animate progress bar
+  requestAnimationFrame(function(){ bar.style.transition='width '+secs+'s linear'; bar.style.width='0%'; });
+  var left=secs;
+  var t=setInterval(function(){ left--; if(cnt)cnt.textContent=left; if(left<=0){clearInterval(t);} },1000);
+  setTimeout(function(){ try{wrap.remove();}catch(_){} if(typeof opts.onClose==='function')opts.onClose(); }, secs*1000);
+  return wrap;
+}
+
+var NOT_SERVED_MSG='We are currently working to extend our services to your region. '+
+  'Please submit your inquiry via our <a href="'+AG_BASE+'contact-us/">Contact Us</a> page.';
+var LOCATION_BLOCKED_MSG='We could not confirm your delivery location. '+
+  'Location access is needed to serve your area. Your cart has been cleared and you are being redirected.';
+
+/* Resolve the user's pincode. Returns a promise:
+   {status:'served'|'not_served'|'denied'|'unavailable', pincode:string|null} */
+function agResolveLocation(force){
+  var cached=agGeoGet();
+  if(!force && cached && (Date.now()-cached.ts)<30*60*1000){ return Promise.resolve(cached); }
+  return new Promise(function(resolve){
+    if(!navigator.geolocation){ var r={status:'unavailable',pincode:null,served:false,ts:Date.now()}; agGeoSet(r); return resolve(r); }
+    navigator.geolocation.getCurrentPosition(function(pos){
+      // reverse-geocode via OpenStreetMap Nominatim
+      fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+encodeURIComponent(pos.coords.latitude)+'&lon='+encodeURIComponent(pos.coords.longitude),{headers:{'Accept':'application/json'}})
+        .then(function(r){return r.json();})
+        .then(function(d){
+          var pin=(d&&d.address&&(d.address.postcode||''))||'';
+          pin=(''+pin).replace(/\D+/g,'').slice(0,6);
+          var served=pin!=='' && SERVED.indexOf(pin)!==-1;
+          var r={status:served?'served':'not_served',pincode:pin||null,served:served,ts:Date.now()};
+          agGeoSet(r); resolve(r);
+        })
+        .catch(function(){ var r={status:'unavailable',pincode:null,served:false,ts:Date.now()}; agGeoSet(r); resolve(r); });
+    }, function(err){
+      // 1 = permission denied
+      var st=(err&&err.code===1)?'denied':'unavailable';
+      var r={status:st,pincode:null,served:false,ts:Date.now()}; agGeoSet(r); resolve(r);
+    }, {enableHighAccuracy:false,timeout:9000,maximumAge:600000});
+  });
+}
+
 const getCart=()=>{try{return JSON.parse(localStorage.getItem(CART_KEY)||'[]')}catch{return[]}};
 const saveCart=c=>localStorage.setItem(CART_KEY,JSON.stringify(c));
 function updateCartCount(){const n=getCart().reduce((s,i)=>s+i.qty,0);document.querySelectorAll('#cartCount').forEach(x=>x.textContent=n?`(${n})`:'');const link=document.getElementById('cartLink');if(link){link.classList.toggle('disabled-cart',n===0);link.setAttribute('aria-disabled',n===0?'true':'false');if(n===0)link.dataset.href=link.href;}}
@@ -13,7 +76,20 @@ const cartButtons=[...document.querySelectorAll('.add-to-cart')];
 function cartRead(){try{return JSON.parse(localStorage.getItem(CART_KEY)||'[]')}catch{return[]}}
 function cartWrite(c){localStorage.setItem(CART_KEY,JSON.stringify(c));updateCartCount()}
 function syncButton(btn){const card=btn.closest('.product-card');const sel=card?.querySelector('.variant-select');const opt=sel?.selectedOptions?.[0];if(!opt)return;const stock=Number(opt.dataset.stock||0);btn.dataset.variant=opt.value;btn.disabled=stock<=0;btn.textContent=stock>0?'Add to Cart':'Coming Soon'}
-for(const btn of cartButtons){syncButton(btn);btn.addEventListener('click',()=>{if(btn.disabled)return;const card=btn.closest('.product-card');const sel=card.querySelector('.variant-select');const variant=sel.selectedOptions[0];const stock=Number(variant.dataset.stock||0);const c=cartRead();const id=Number(variant.value);const found=c.find(x=>x.variant_id===id);if(found)found.qty=Math.min(found.qty+1,stock);else c.push({variant_id:id,qty:1});cartWrite(c);btn.textContent='Added ✓';setTimeout(()=>syncButton(btn),900);})}
+function agDoAdd(btn){const card=btn.closest('.product-card');const sel=card.querySelector('.variant-select');const variant=sel.selectedOptions[0];const stock=Number(variant.dataset.stock||0);const c=cartRead();const id=Number(variant.value);const found=c.find(x=>x.variant_id===id);if(found)found.qty=Math.min(found.qty+1,stock);else c.push({variant_id:id,qty:1});cartWrite(c);btn.textContent='Added ✓';setTimeout(()=>syncButton(btn),900);}
+for(const btn of cartButtons){syncButton(btn);btn.addEventListener('click',()=>{
+  if(btn.disabled)return;
+  // If serviceability isn't configured (no served pincodes), don't block.
+  if(!SERVED.length){ agDoAdd(btn); return; }
+  var cached=agGeoGet();
+  if(cached && cached.served){ agDoAdd(btn); return; }   // already confirmed served
+  var old=btn.textContent; btn.textContent='Checking area…'; btn.disabled=true;
+  agResolveLocation(false).then(function(loc){
+    btn.disabled=false; btn.textContent=old;
+    if(loc.served){ agDoAdd(btn); }
+    else { agPopup(NOT_SERVED_MSG); }   // not served / denied / unavailable → block with popup
+  });
+})}
 for(const sel of document.querySelectorAll('.variant-select')) sel.addEventListener('change',()=>{syncButton(sel.closest('.product-card').querySelector('.add-to-cart'))});
 const cartRoot=document.getElementById('cartItems');
 if(cartRoot){(async()=>{const items=cartRead();if(!items.length){cartRoot.innerHTML='<div class="empty"><h2>Your basket is empty</h2><p>Add fresh products to get started.</p><a class="btn btn-primary" href="'+(window.AAPKI?.base||'/aapkigrocery/')+'">Start shopping</a></div>';const back=(window.AAPKI?.base||'/aapkigrocery/');setTimeout(()=>{window.location.replace(back);},1200);return}const r=await fetch((window.AAPKI?.base||'/aapkigrocery/')+'api/cart-products.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items})});const d=await r.json();if(!d.ok){cartRoot.innerHTML='<p class="alert">Could not load cart.</p>';return}localStorage.setItem(CART_KEY,JSON.stringify(d.items.map(x=>({variant_id:Number(x.variant_id),qty:Number(x.qty)}))));renderCart(d.items)})()}

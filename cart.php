@@ -160,6 +160,19 @@ $addresses=[];$userPoints=0;$userWallet=0.0;if(is_logged_in()){$st=$pdo->prepare
 <script>
 (function(){
   var orderForm=document.getElementById('orderForm');
+  var AG=(window.AAPKI||{}); var AGBASE=AG.base||'/aapkigrocery/';
+  var SERVED=(AG.servedPincodes||[]).map(String);
+
+  function agCheckoutPopup(message){
+    var wrap=document.createElement('div'); wrap.className='ag-modal';
+    wrap.innerHTML='<div class="ag-modal-card"><div class="ag-modal-bar"><span></span></div><div class="ag-modal-body">'+message+'</div><div class="ag-modal-count">Closing in <b>5</b>s…</div></div>';
+    document.body.appendChild(wrap);
+    var bar=wrap.querySelector('.ag-modal-bar span'); var cnt=wrap.querySelector('.ag-modal-count b');
+    requestAnimationFrame(function(){bar.style.transition='width 5s linear';bar.style.width='0%';});
+    var left=5,t=setInterval(function(){left--;if(cnt)cnt.textContent=left;if(left<=0)clearInterval(t);},1000);
+    setTimeout(function(){try{localStorage.removeItem('aapki_cart_v2');}catch(_){}; window.location.replace(AGBASE);},5000);
+  }
+
   if(orderForm){
     orderForm.addEventListener('submit',function(e){
       // Attach the current cart from localStorage
@@ -175,6 +188,20 @@ $addresses=[];$userPoints=0;$userWallet=0.0;if(is_logged_in()){$st=$pdo->prepare
         var add=document.querySelector('.add-address-inline');
         if(add){add.setAttribute('open','');add.scrollIntoView({behavior:'smooth',block:'center'});}
         return;
+      }
+      // Serviceability: if location is blocked/denied/unavailable, clear cart + redirect home.
+      if(SERVED.length){
+        var g=null; try{g=JSON.parse(localStorage.getItem('aapki_geo_v1')||'null');}catch(_){}
+        if(!g || g.status==='denied' || g.status==='unavailable'){
+          e.preventDefault();
+          agCheckoutPopup('We could not confirm your delivery location. Location access is required to place an order. Your cart will be cleared and you will be redirected to the home page.');
+          return;
+        }
+        if(!g.served){
+          e.preventDefault();
+          agCheckoutPopup('We are currently working to extend our services to your region. Please submit your inquiry via our Contact Us page. Your cart will be cleared and you will be redirected to the home page.');
+          return;
+        }
       }
     });
   }

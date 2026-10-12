@@ -1075,3 +1075,18 @@ img,svg,video{max-width:100%;height:auto}
 @media(hover:none){
   .btn,.add-to-cart,.aisle-arrow,.slider-dot,.qty-controls button,.account-trigger{min-height:40px}
 }
+
+/* ============================================================
+   SERVICEABILITY AUTO-CLOSE POPUP (no close button, 5s)
+   ============================================================ */
+.ag-modal{position:fixed;inset:0;z-index:1000;background:rgba(16,30,20,.55);
+  display:grid;place-items:center;padding:20px;animation:agFade .2s ease}
+@keyframes agFade{from{opacity:0}to{opacity:1}}
+.ag-modal-card{background:#fff;max-width:440px;width:100%;border-radius:16px;overflow:hidden;
+  box-shadow:0 24px 60px rgba(0,0,0,.3);text-align:center}
+.ag-modal-bar{height:5px;background:#e4efe0}
+.ag-modal-bar span{display:block;height:100%;width:100%;background:var(--green,#12652f)}
+.ag-modal-body{padding:26px 26px 10px;font-size:16px;line-height:1.6;color:#1c261e}
+.ag-modal-body a{color:var(--green,#12652f);font-weight:800}
+.ag-modal-count{padding:0 26px 22px;color:#68746b;font-size:13px}
+.ag-modal-count b{color:var(--green,#12652f)}
