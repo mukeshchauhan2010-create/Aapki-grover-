@@ -22,3 +22,8 @@ define('GOOGLE_CLIENT_SECRET', 'YOUR_GOOGLE_CLIENT_SECRET');
 // ── Facebook OAuth (from Meta for Developers) ──
 // define('FACEBOOK_APP_ID',     'YOUR_FACEBOOK_APP_ID');
 // define('FACEBOOK_APP_SECRET', 'YOUR_FACEBOOK_APP_SECRET');
+
+// ── Razorpay (from Razorpay dashboard; use rzp_test_ for testing) ──
+// define('RAZORPAY_KEY_ID',        'rzp_test_xxxxxxxxxxxxx');
+// define('RAZORPAY_KEY_SECRET',    'your_key_secret');
+// define('RAZORPAY_WEBHOOK_SECRET','your_webhook_secret');

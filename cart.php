@@ -34,6 +34,7 @@ if($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['add_address']) && verify
 if($_SERVER['REQUEST_METHOD']==='POST' && !isset($_POST['add_address']) && verify_csrf($_POST['csrf']??null)){
   if(!is_logged_in()){flash('error','Please login before placing your order.');redirect('login.php?return=cart/');}
   require_once __DIR__.'/lib/wallet.php';
+  require_once __DIR__.'/lib/razorpay.php';
   $items=json_decode($_POST['cart_json']??'[]',true) ?: []; $address=(int)($_POST['address_id']??0); $coupon=trim($_POST['coupon']??''); $payment=in_array($_POST['payment_method']??'cod',['cod','razorpay','wallet'],true)?$_POST['payment_method']:'cod'; $pointsUsed=max(0,(int)($_POST['points_used']??0)); $err='';
   $as=$pdo->prepare('SELECT * FROM addresses WHERE id=? AND user_id=?');$as->execute([$address,user_id()]);$addr=$as->fetch(); if(!$addr)$err='Please select a delivery address.';
   $valid=[];$subtotal=0;
@@ -46,6 +47,67 @@ if($_SERVER['REQUEST_METHOD']==='POST' && !isset($_POST['add_address']) && verif
     if($payment==='wallet'){$wbal=wallet_balance($pdo,(int)user_id());if($wbal + 0.0001 < $total)throw new RuntimeException('Insufficient wallet balance. Available ₹'.number_format($wbal,2).', order total ₹'.number_format($total,2).'.');$payStatus='paid';}
     $os=$pdo->prepare('INSERT INTO orders(order_no,user_id,address_id,subtotal,handling_charge,delivery_fee,discount,points_used,points_earned,coupon_code,total,payment_method,payment_status,status,delivery_slot) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');$os->execute([$orderNo,user_id(),$address,$subtotal,$handling,$delivery,$discount,$pointsUsed,$earn,$coupon?:null,$total,$payment,$payStatus,'placed',trim($_POST['delivery_slot']??'Any available slot')]);$oid=(int)$pdo->lastInsertId();
     if($payment==='wallet'){wallet_debit($pdo,(int)user_id(),$total,'Order payment '.$orderNo,$oid,true);}$is=$pdo->prepare('INSERT INTO order_items(order_id,product_id,variant_id,product_name,variant_label,qty,unit_price,line_total) VALUES(?,?,?,?,?,?,?,?)');$ss=$pdo->prepare('UPDATE product_variants SET stock=stock-? WHERE id=? AND stock>=?');foreach($valid as $x){$v=$x['v'];$q=$x['qty'];$ss->execute([$q,$v['id'],$q]);if($ss->rowCount()!==1)throw new RuntimeException('Inventory changed. Please retry.');$is->execute([$oid,$v['product_id'],$v['id'],$v['name'],$v['label'],$q,$v['price'],$q*$v['price']]);}$pdo->prepare('UPDATE coupons SET used_count=used_count+1 WHERE code=? AND ?<>""')->execute([$coupon,$coupon]);if($pointsUsed){$pdo->prepare('UPDATE users SET points=points-? WHERE id=?')->execute([$pointsUsed,user_id()]);$pdo->prepare('INSERT INTO point_transactions(user_id,points,reason,order_id) VALUES(?,?,?,?)')->execute([user_id(),-$pointsUsed,'Points redeemed',$oid]);}if($earn){$pdo->prepare('UPDATE users SET points=points+? WHERE id=?')->execute([$earn,user_id()]);$pdo->prepare('INSERT INTO point_transactions(user_id,points,reason,order_id) VALUES(?,?,?,?)')->execute([user_id(),$earn,'Order points',$oid]);}$pdo->commit();
+
+    // ── Razorpay online payment: open Checkout popup instead of instant success ──
+    if($payment==='razorpay'){
+      if(!razorpay_enabled($pdo)) { flash('error','Online payment is not available right now. Please choose COD.'); redirect('cart/'); }
+      try {
+        $rzp = razorpay_create_order($pdo, (float)$total, $orderNo);
+        $pdo->prepare('UPDATE orders SET razorpay_order_id=? WHERE id=?')->execute([$rzp['id'],$oid]);
+      } catch(Throwable $e) {
+        // Order exists as pending; let the user retry from account.
+        flash('error','Could not start the online payment. Your order '.$orderNo.' is pending; please retry payment.');
+        redirect('account/orders.php');
+      }
+      $u = $pdo->prepare('SELECT first_name,last_name,email,phone FROM users WHERE id=?'); $u->execute([user_id()]); $u=$u->fetch();
+      $keyId   = razorpay_key_id($pdo);
+      $amountP = (int)round($total*100);
+      $verifyUrl = url('api/razorpay-verify.php');
+      ?><!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Complete payment</title><link rel="stylesheet" href="<?=e(url('assets/css/style.css'))?>"><script src="https://checkout.razorpay.com/v1/checkout.js"></script></head>
+      <body><main class="container page"><div class="panel" style="max-width:520px;margin:40px auto;text-align:center">
+        <span class="eyebrow">PAYMENT</span><h1>Complete your payment</h1>
+        <p class="hint">Order <strong><?=e($orderNo)?></strong> · ₹<?=number_format($total,2)?></p>
+        <p class="hint" id="rzpMsg">Opening secure payment…</p>
+        <form id="verifyForm" method="post" action="<?=e($verifyUrl)?>" style="display:none">
+          <input type="hidden" name="csrf" value="<?=e(csrf_token())?>">
+          <input type="hidden" name="order_no" value="<?=e($orderNo)?>">
+          <input type="hidden" name="razorpay_order_id" id="f_oid" value="<?=e($rzp['id'])?>">
+          <input type="hidden" name="razorpay_payment_id" id="f_pid">
+          <input type="hidden" name="razorpay_signature" id="f_sig">
+        </form>
+        <a class="btn" href="<?=e(url('cart/'))?>">Cancel &amp; return to cart</a>
+      </div></main>
+      <script>
+      (function(){
+        var opts={
+          key:<?=json_encode($keyId)?>,
+          amount:<?=json_encode($amountP)?>,
+          currency:'INR',
+          name:<?=json_encode(APP_NAME)?>,
+          description:'Order <?=e($orderNo)?>',
+          order_id:<?=json_encode($rzp['id'])?>,
+          prefill:{
+            name:<?=json_encode(trim(($u['first_name']??'').' '.($u['last_name']??'')))?>,
+            email:<?=json_encode($u['email']??'')?>,
+            contact:<?=json_encode($u['phone']??'')?>
+          },
+          theme:{color:'#12652f'},
+          handler:function(resp){
+            document.getElementById('f_pid').value=resp.razorpay_payment_id;
+            document.getElementById('f_sig').value=resp.razorpay_signature;
+            document.getElementById('rzpMsg').textContent='Verifying payment…';
+            document.getElementById('verifyForm').submit();
+          },
+          modal:{ondismiss:function(){document.getElementById('rzpMsg').textContent='Payment cancelled. You can retry from your orders, or choose COD.';}}
+        };
+        try{ var rzp=new Razorpay(opts); rzp.on('payment.failed',function(){document.getElementById('rzpMsg').textContent='Payment failed. Please retry.';}); rzp.open(); }
+        catch(e){ document.getElementById('rzpMsg').textContent='Could not load the payment window.'; }
+      })();
+      </script>
+      </body></html><?php
+      exit;
+    }
+
     echo '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="3;url='.e(url('account/')).'"><title>Order placed</title><link rel="stylesheet" href="'.e(url('assets/css/style.css')).'"></head><body><main class="container page"><div class="panel success-order"><div class="success-icon">✓</div><span class="eyebrow">ORDER CONFIRMED</span><h1>Thank you for your order!</h1><p>Your order <strong>'.e($orderNo).'</strong> has been created.</p><p class="hint">Returning to your account…</p><a class="btn btn-primary" href="'.e(url('account/')).'">View My Account</a></div></main></body></html>';exit;
   }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();$err=$e->getMessage();}}
 }

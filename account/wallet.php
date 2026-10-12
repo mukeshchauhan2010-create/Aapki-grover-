@@ -6,7 +6,8 @@ if(!is_logged_in()){ redirect('login.php?return=account/wallet.php'); }
 $uid=user_id();
 $u=$pdo->prepare('SELECT * FROM users WHERE id=?'); $u->execute([$uid]); $u=$u->fetch();
 
-$razorpayLive = setting_bool($pdo,'razorpay_enabled') && RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET;
+require_once __DIR__.'/../lib/razorpay.php';
+$razorpayLive = razorpay_enabled($pdo);
 
 $balance = wallet_balance($pdo,$uid);
 $txns    = wallet_transactions($pdo,$uid,50);

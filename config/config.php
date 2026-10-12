@@ -44,6 +44,6 @@ function user_can(PDO $pdo,string $permission):bool{if(empty($_SESSION['role']))
 function cart_is_live(PDO $pdo): bool { return setting($pdo,'cart_mode','live')==='live'; }
 function upload_public_path(string $relative): string { return url(ltrim($relative,'/')); }
 function product_image(array $p): string { return asset_url($p['image_webp'] ?? $p['image'] ?? null); }
-const RAZORPAY_KEY_ID='';
-const RAZORPAY_KEY_SECRET='';
-const RAZORPAY_WEBHOOK_SECRET='';
+if(!defined('RAZORPAY_KEY_ID'))        define('RAZORPAY_KEY_ID','');
+if(!defined('RAZORPAY_KEY_SECRET'))    define('RAZORPAY_KEY_SECRET','');
+if(!defined('RAZORPAY_WEBHOOK_SECRET'))define('RAZORPAY_WEBHOOK_SECRET','');
