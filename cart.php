@@ -189,15 +189,11 @@ $addresses=[];$userPoints=0;$userWallet=0.0;if(is_logged_in()){$st=$pdo->prepare
         if(add){add.setAttribute('open','');add.scrollIntoView({behavior:'smooth',block:'center'});}
         return;
       }
-      // Serviceability: if location is blocked/denied/unavailable, clear cart + redirect home.
+      // Serviceability: if the saved pincode is not an active served area,
+      // clear the cart and redirect home (auto-close popup).
       if(SERVED.length){
-        var g=null; try{g=JSON.parse(localStorage.getItem('aapki_geo_v1')||'null');}catch(_){}
-        if(!g || g.status==='denied' || g.status==='unavailable'){
-          e.preventDefault();
-          agCheckoutPopup('We could not confirm your delivery location. Location access is required to place an order. Your cart will be cleared and you will be redirected to the home page.');
-          return;
-        }
-        if(!g.served){
+        var g=null; try{g=JSON.parse(localStorage.getItem('aapki_pincode_v1')||'null');}catch(_){}
+        if(!g || !g.served){
           e.preventDefault();
           agCheckoutPopup('We are currently working to extend our services to your region. Please submit your inquiry via our Contact Us page. Your cart will be cleared and you will be redirected to the home page.');
           return;

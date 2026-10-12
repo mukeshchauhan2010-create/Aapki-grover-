@@ -2,66 +2,96 @@ window.AAPKI=window.AAPKI||{base:'/aapkigrocery/'};
 const CART_KEY='aapki_cart_v2';
 
 /* ============================================================
-   SERVICEABILITY (zip/pincode) — gate cart & checkout by area
+   SERVICEABILITY — API-free pincode gate
+   After 15s, ask the visitor for their pincode. If it is not an active
+   served pincode (or none entered), disable Add-to-Cart + Login and show
+   the "not serviceable" message. Browsing stays fully available.
    ============================================================ */
 const AG_BASE=(window.AAPKI&&window.AAPKI.base)||'/aapkigrocery/';
 const SERVED=((window.AAPKI&&window.AAPKI.servedPincodes)||[]).map(String);
-const GEO_KEY='aapki_geo_v1'; // {pincode, served, status, ts}
-
-function agGeoGet(){try{return JSON.parse(localStorage.getItem(GEO_KEY)||'null');}catch(_){return null;}}
-function agGeoSet(o){try{localStorage.setItem(GEO_KEY,JSON.stringify(o));}catch(_){}}
-
-/* Auto-closing popup (5s), NO close button, cannot be dismissed early. */
-function agPopup(message, opts){
-  opts=opts||{};
-  var secs=opts.secs||5;
-  var wrap=document.createElement('div');
-  wrap.className='ag-modal';
-  wrap.innerHTML='<div class="ag-modal-card"><div class="ag-modal-bar"><span></span></div>'+
-    '<div class="ag-modal-body">'+message+'</div>'+
-    '<div class="ag-modal-count">Closing in <b>'+secs+'</b>s…</div></div>';
-  document.body.appendChild(wrap);
-  var bar=wrap.querySelector('.ag-modal-bar span');
-  var cnt=wrap.querySelector('.ag-modal-count b');
-  // animate progress bar
-  requestAnimationFrame(function(){ bar.style.transition='width '+secs+'s linear'; bar.style.width='0%'; });
-  var left=secs;
-  var t=setInterval(function(){ left--; if(cnt)cnt.textContent=left; if(left<=0){clearInterval(t);} },1000);
-  setTimeout(function(){ try{wrap.remove();}catch(_){} if(typeof opts.onClose==='function')opts.onClose(); }, secs*1000);
-  return wrap;
-}
-
+const PIN_KEY='aapki_pincode_v1'; // {pincode, served}
 var NOT_SERVED_MSG='We are currently working to extend our services to your region. '+
   'Please submit your inquiry via our <a href="'+AG_BASE+'contact-us/">Contact Us</a> page.';
-var LOCATION_BLOCKED_MSG='We could not confirm your delivery location. '+
-  'Location access is needed to serve your area. Your cart has been cleared and you are being redirected.';
 
-/* Resolve the user's pincode. Returns a promise:
-   {status:'served'|'not_served'|'denied'|'unavailable', pincode:string|null} */
-function agResolveLocation(force){
-  var cached=agGeoGet();
-  if(!force && cached && (Date.now()-cached.ts)<30*60*1000){ return Promise.resolve(cached); }
-  return new Promise(function(resolve){
-    if(!navigator.geolocation){ var r={status:'unavailable',pincode:null,served:false,ts:Date.now()}; agGeoSet(r); return resolve(r); }
-    navigator.geolocation.getCurrentPosition(function(pos){
-      // reverse-geocode via OpenStreetMap Nominatim
-      fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+encodeURIComponent(pos.coords.latitude)+'&lon='+encodeURIComponent(pos.coords.longitude),{headers:{'Accept':'application/json'}})
-        .then(function(r){return r.json();})
-        .then(function(d){
-          var pin=(d&&d.address&&(d.address.postcode||''))||'';
-          pin=(''+pin).replace(/\D+/g,'').slice(0,6);
-          var served=pin!=='' && SERVED.indexOf(pin)!==-1;
-          var r={status:served?'served':'not_served',pincode:pin||null,served:served,ts:Date.now()};
-          agGeoSet(r); resolve(r);
-        })
-        .catch(function(){ var r={status:'unavailable',pincode:null,served:false,ts:Date.now()}; agGeoSet(r); resolve(r); });
-    }, function(err){
-      // 1 = permission denied
-      var st=(err&&err.code===1)?'denied':'unavailable';
-      var r={status:st,pincode:null,served:false,ts:Date.now()}; agGeoSet(r); resolve(r);
-    }, {enableHighAccuracy:false,timeout:9000,maximumAge:600000});
+function agPinGet(){try{return JSON.parse(localStorage.getItem(PIN_KEY)||'null');}catch(_){return null;}}
+function agPinSet(o){try{localStorage.setItem(PIN_KEY,JSON.stringify(o));}catch(_){}}
+function agIsServed(pin){pin=(''+(pin||'')).replace(/\D+/g,'');return pin!=='' && SERVED.indexOf(pin)!==-1;}
+
+/* Apply served / not-served state to the whole page. */
+function agApplyServiceState(served){
+  document.body.classList.toggle('ag-not-served', !served);
+  document.body.classList.toggle('ag-served', !!served);
+  document.querySelectorAll('.add-to-cart').forEach(function(b){
+    if(!served){ b.dataset.agBlocked='1'; b.setAttribute('aria-disabled','true'); b.classList.add('ag-disabled'); }
+    else { delete b.dataset.agBlocked; b.removeAttribute('aria-disabled'); b.classList.remove('ag-disabled'); }
+  });
+  document.querySelectorAll('#accountTrigger, a[href$="login.php"], a[href$="register.php"], [data-google-login]').forEach(function(a){
+    if(!served){ a.classList.add('ag-disabled'); a.setAttribute('aria-disabled','true'); }
+    else { a.classList.remove('ag-disabled'); a.removeAttribute('aria-disabled'); }
+  });
+  var ind=document.getElementById('agPinIndicator');
+  if(ind){ var p=agPinGet(); ind.textContent = (p&&p.pincode)? ('📍 '+p.pincode+(served?'':' · not serviceable')) : '📍 Set pincode'; }
+}
+
+/* Pincode prompt modal. */
+function agPinPrompt(){
+  if(document.getElementById('agPinModal')) return;
+  var wrap=document.createElement('div'); wrap.className='ag-modal'; wrap.id='agPinModal';
+  wrap.innerHTML=
+    '<div class="ag-modal-card ag-pin-card">'+
+      '<div class="ag-pin-head"><b>Deliver to your area</b></div>'+
+      '<div class="ag-modal-body">'+
+        '<p>Please enter your pincode to check if we deliver to you.</p>'+
+        '<form id="agPinForm" class="ag-pin-form">'+
+          '<input id="agPinInput" inputmode="numeric" pattern="[1-9][0-9]{5}" maxlength="6" placeholder="6-digit pincode" required>'+
+          '<button type="submit" class="btn btn-primary">Check</button>'+
+        '</form>'+
+        '<p class="ag-pin-msg" id="agPinMsg"></p>'+
+        '<button type="button" class="ag-pin-skip" id="agPinSkip">Skip for now (continue browsing)</button>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(wrap);
+  var form=wrap.querySelector('#agPinForm'), input=wrap.querySelector('#agPinInput'), msg=wrap.querySelector('#agPinMsg');
+  try{input.focus();}catch(_){}
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var pin=(input.value||'').replace(/\D+/g,'');
+    if(!/^[1-9][0-9]{5}$/.test(pin)){ msg.innerHTML='<span class="ag-pin-err">Enter a valid 6-digit pincode.</span>'; return; }
+    var served=agIsServed(pin);
+    agPinSet({pincode:pin,served:served});
+    if(served){
+      msg.innerHTML='<span class="ag-pin-ok">✓ Great! We deliver to '+pin+'.</span>';
+      agApplyServiceState(true);
+      setTimeout(function(){try{wrap.remove();}catch(_){}} ,900);
+    } else {
+      msg.innerHTML='<span class="ag-pin-err">'+NOT_SERVED_MSG+'</span>';
+      agApplyServiceState(false);
+    }
+  });
+  wrap.querySelector('#agPinSkip').addEventListener('click',function(){
+    try{wrap.remove();}catch(_){}
+    if(!(agPinGet()&&agPinGet().served)) agApplyServiceState(false);
   });
 }
+
+/* Clicking a disabled add-to-cart / login re-opens the pincode prompt. */
+document.addEventListener('click',function(e){
+  if(!SERVED.length) return;
+  var s=agPinGet(); if(s&&s.served) return;
+  var t=e.target.closest('.add-to-cart, #accountTrigger, a[href$="login.php"], a[href$="register.php"], [data-google-login]');
+  if(t && (t.classList.contains('ag-disabled')||t.getAttribute('aria-disabled')==='true')){
+    e.preventDefault(); e.stopPropagation(); agPinPrompt();
+  }
+}, true);
+
+/* Boot the serviceability gate. */
+(function agServiceBoot(){
+  if(!SERVED.length){ agApplyServiceState(true); return; } // not configured → don't gate
+  var saved=agPinGet();
+  if(saved && saved.pincode){ agApplyServiceState(!!saved.served); if(saved.served) return; }
+  else { agApplyServiceState(false); }
+  setTimeout(function(){ var s=agPinGet(); if(!(s&&s.served)) agPinPrompt(); }, 15000);
+})();
 
 const getCart=()=>{try{return JSON.parse(localStorage.getItem(CART_KEY)||'[]')}catch{return[]}};
 const saveCart=c=>localStorage.setItem(CART_KEY,JSON.stringify(c));
@@ -79,16 +109,13 @@ function syncButton(btn){const card=btn.closest('.product-card');const sel=card?
 function agDoAdd(btn){const card=btn.closest('.product-card');const sel=card.querySelector('.variant-select');const variant=sel.selectedOptions[0];const stock=Number(variant.dataset.stock||0);const c=cartRead();const id=Number(variant.value);const found=c.find(x=>x.variant_id===id);if(found)found.qty=Math.min(found.qty+1,stock);else c.push({variant_id:id,qty:1});cartWrite(c);btn.textContent='Added ✓';setTimeout(()=>syncButton(btn),900);}
 for(const btn of cartButtons){syncButton(btn);btn.addEventListener('click',()=>{
   if(btn.disabled)return;
-  // If serviceability isn't configured (no served pincodes), don't block.
-  if(!SERVED.length){ agDoAdd(btn); return; }
-  var cached=agGeoGet();
-  if(cached && cached.served){ agDoAdd(btn); return; }   // already confirmed served
-  var old=btn.textContent; btn.textContent='Checking area…'; btn.disabled=true;
-  agResolveLocation(false).then(function(loc){
-    btn.disabled=false; btn.textContent=old;
-    if(loc.served){ agDoAdd(btn); }
-    else { agPopup(NOT_SERVED_MSG); }   // not served / denied / unavailable → block with popup
-  });
+  // Serviceability gate: block if a served-pincode list exists and the visitor
+  // isn't confirmed served. Prompt them for a pincode.
+  if(SERVED.length){
+    var s=agPinGet();
+    if(!(s&&s.served)){ agPinPrompt(); return; }
+  }
+  agDoAdd(btn);
 })}
 for(const sel of document.querySelectorAll('.variant-select')) sel.addEventListener('change',()=>{syncButton(sel.closest('.product-card').querySelector('.add-to-cart'))});
 const cartRoot=document.getElementById('cartItems');

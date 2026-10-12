@@ -1090,3 +1090,26 @@ img,svg,video{max-width:100%;height:auto}
 .ag-modal-body a{color:var(--green,#12652f);font-weight:800}
 .ag-modal-count{padding:0 26px 22px;color:#68746b;font-size:13px}
 .ag-modal-count b{color:var(--green,#12652f)}
+
+/* ============================================================
+   PINCODE GATE — prompt modal + disabled (not-served) states
+   ============================================================ */
+.ag-pin-card{max-width:420px}
+.ag-pin-head{background:var(--green,#12652f);color:#fff;padding:16px 24px;font-size:17px}
+.ag-pin-card .ag-modal-body{text-align:left;padding:22px 24px 24px}
+.ag-pin-card .ag-modal-body p{margin:0 0 14px;color:#3a4a3c}
+.ag-pin-form{display:flex;gap:10px}
+.ag-pin-form input{flex:1;min-width:0;padding:12px 14px;border:1px solid var(--line,#dce5da);border-radius:10px;font-size:16px}
+.ag-pin-form .btn{white-space:nowrap}
+.ag-pin-msg{margin:12px 0 0!important;min-height:1px}
+.ag-pin-ok{color:#1a7a34;font-weight:700}
+.ag-pin-err{color:#c0392b;font-weight:600;line-height:1.5}
+.ag-pin-err a{color:#12652f;font-weight:800}
+.ag-pin-skip{margin-top:14px;background:none;border:0;color:#68746b;font-size:13px;cursor:pointer;text-decoration:underline}
+
+/* Disabled Add-to-Cart & Login when area not served */
+.ag-disabled{opacity:.5!important;pointer-events:none!important;cursor:not-allowed!important;filter:grayscale(.3)}
+body.ag-not-served .add-to-cart.ag-disabled::after{content:" (not in your area)";font-weight:400;font-size:11px}
+
+/* Optional header pincode indicator (shown only if the element exists) */
+#agPinIndicator{cursor:pointer;font-weight:700;color:var(--green,#12652f);font-size:13px}
