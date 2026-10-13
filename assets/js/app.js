@@ -84,13 +84,17 @@ document.addEventListener('click',function(e){
   }
 }, true);
 
-/* Boot the serviceability gate. */
+/* Boot the serviceability gate — prompt soon after the page loads. */
 (function agServiceBoot(){
   if(!SERVED.length){ agApplyServiceState(true); return; } // not configured → don't gate
   var saved=agPinGet();
   if(saved && saved.pincode){ agApplyServiceState(!!saved.served); if(saved.served) return; }
   else { agApplyServiceState(false); }
-  setTimeout(function(){ var s=agPinGet(); if(!(s&&s.served)) agPinPrompt(); }, 15000);
+  // Ask for the pincode shortly after load (not on the auth/cart pages where it would interrupt).
+  var path=location.pathname||'';
+  var skip=/\/(login|register|cart)(\.php|\/)/i.test(path) || /\/auth\//i.test(path);
+  if(skip) return;
+  setTimeout(function(){ var s=agPinGet(); if(!(s&&s.served)) agPinPrompt(); }, 1200);
 })();
 
 const getCart=()=>{try{return JSON.parse(localStorage.getItem(CART_KEY)||'[]')}catch{return[]}};
