@@ -1113,3 +1113,20 @@ body.ag-not-served .add-to-cart.ag-disabled::after{content:" (not in your area)"
 
 /* Optional header pincode indicator (shown only if the element exists) */
 #agPinIndicator{cursor:pointer;font-weight:700;color:var(--green,#12652f);font-size:13px}
+
+/* ============================================================
+   REFER & EARN — account menu item + page
+   ============================================================ */
+.account-sidebar>a.refer-link{display:block}
+.refer-link small{display:block;font-weight:600;font-size:10.5px;color:#8a9a8c;margin-top:3px;line-height:1.35;white-space:normal}
+.account-sidebar>a.refer-link.active small,.account-sidebar>a.refer-link:hover small{color:#3f7a44}
+
+.refer-hero{display:flex;align-items:center;gap:16px;background:linear-gradient(120deg,#12652f,#f47a18);color:#fff;border-radius:16px;padding:22px 24px;box-shadow:0 12px 30px rgba(18,101,47,.22);margin-bottom:12px}
+.refer-hero-icon{width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:28px}
+.refer-hero small{display:block;font-size:12px;font-weight:700;letter-spacing:.05em;opacity:.95}
+.refer-hero strong{font-size:30px;line-height:1.1}
+.refer-hero span{display:block;font-size:12px;opacity:.95}
+.refer-code-row{display:flex;gap:10px;margin:6px 0 16px;flex-wrap:wrap}
+.refer-code-row input{flex:1;min-width:200px;padding:12px 14px;border:1px solid var(--line,#dce5da);border-radius:10px;font-size:16px;font-weight:700;letter-spacing:.5px;background:#f7faf5}
+.refer-share{margin-top:8px}
+@media(max-width:600px){.refer-code-row input{min-width:0}}

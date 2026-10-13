@@ -22,6 +22,9 @@ $title='My Wallet | '.APP_NAME; include __DIR__.'/../includes/header.php';
   <a href="<?=url('account/')?>">👤 My Profile</a>
   <a href="<?=url('account/orders.php')?>">📦 My Orders</a>
   <a href="<?=url('account/#addresses')?>">📍 My Addresses</a>
+  <?php if(setting_bool($pdo,'referral_enabled')): $refPts=(int)setting($pdo,'referral_points','10'); ?>
+  <a class="refer-link" href="<?=url('account/refer.php')?>">🎁 Refer &amp; Earn<small>Earn ₹<?=number_format($refPts)?> per referral on their first order</small></a>
+  <?php endif; ?>
   <a href="<?=url('account/#privacy')?>">🔒 Account Privacy</a>
   <a href="<?=url('logout.php')?>">↪ Logout</a>
 </aside>
