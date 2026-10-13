@@ -7,12 +7,27 @@ if (!user_can($pdo, 'settings')) redirect('admin/');
 $uploadDir = __DIR__.'/../uploads/qr';
 $publicDir = 'uploads/qr';
 
+// If the POST exceeded post_max_size, PHP empties $_POST/$_FILES (CSRF would
+// fail silently). Detect it and show a clear message.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST) && empty($_FILES)
+    && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+    flash('error', 'The uploaded file is too large for the server (exceeds post_max_size = '.ini_get('post_max_size').'). Please upload a smaller image or increase the limit in php.ini.');
+    redirect('admin/qr.php');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['csrf'] ?? null)) {
     $action = $_POST['action'] ?? 'upload';
     if ($action === 'upload') {
-        if (!empty($_FILES['qr']['name'])) {
+        $f = $_FILES['qr'] ?? null;
+        $errCode = $f['error'] ?? UPLOAD_ERR_NO_FILE;
+        if ($errCode === UPLOAD_ERR_INI_SIZE || $errCode === UPLOAD_ERR_FORM_SIZE) {
+            $limit = ini_get('upload_max_filesize');
+            flash('error', 'QR image is larger than the server upload limit ('.$limit.'). Please upload a smaller image (ideally under '.$limit.'), or increase upload_max_filesize/post_max_size in php.ini.');
+        } elseif (!$f || $errCode === UPLOAD_ERR_NO_FILE || empty($f['name'])) {
+            flash('error', 'Please choose a QR image to upload.');
+        } else {
             try {
-                $im = save_product_image($_FILES['qr'], $uploadDir, $publicDir);
+                $im = save_product_image($f, $uploadDir, $publicDir);
                 $makeActive = !empty($_POST['make_active']);
                 if ($makeActive) $pdo->query('UPDATE payment_qr SET is_active=0');
                 $pdo->prepare('INSERT INTO payment_qr(label,image,is_active) VALUES(?,?,?)')
@@ -21,8 +36,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['csrf'] ?? null)
             } catch (Throwable $e) {
                 flash('error', $e->getMessage());
             }
-        } else {
-            flash('error', 'Please choose a QR image to upload.');
         }
     } elseif ($action === 'activate') {
         $pdo->query('UPDATE payment_qr SET is_active=0');
@@ -48,7 +61,7 @@ include __DIR__.'/../includes/admin-header.php';
       <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
       <input type="hidden" name="action" value="upload">
       <div class="ap-form-grid">
-        <div class="ap-field"><label class="ap-label">QR image (PNG/JPG/WEBP) *</label><input class="ap-input" type="file" name="qr" accept="image/png,image/jpeg,image/webp" required></div>
+        <div class="ap-field"><label class="ap-label">QR image (PNG/JPG/WEBP) *</label><input class="ap-input" type="file" name="qr" accept="image/png,image/jpeg,image/webp" required><span class="ap-hint">Max upload size: <?= e(ini_get('upload_max_filesize')) ?>. If your image is larger, compress it or increase upload_max_filesize/post_max_size in php.ini.</span></div>
         <div class="ap-field"><label class="ap-label">Label (optional)</label><input class="ap-input" name="label" placeholder="e.g. GPay / PhonePe UPI"></div>
         <div class="ap-field" style="align-self:end;"><label class="ap-check-row"><input type="checkbox" name="make_active" checked> Make this the active QR</label></div>
       </div>
