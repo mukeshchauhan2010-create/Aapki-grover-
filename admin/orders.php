@@ -66,13 +66,27 @@ $page        = min($page, $totalPages);
 $offset      = ($page - 1) * $perPage;
 
 $stmt = $pdo->prepare(
-    'SELECT o.*, u.name user_name, u.email
-     FROM orders o LEFT JOIN users u ON u.id=o.user_id'
+    'SELECT o.*, u.name user_name, u.email, u.phone user_phone,
+            a.name addr_name, a.phone addr_phone, a.alt_phone addr_alt,
+            a.apartment_no, a.apartment_name, a.area, a.landmark, a.address_line, a.city, a.state, a.pincode
+     FROM orders o
+     LEFT JOIN users u ON u.id=o.user_id
+     LEFT JOIN addresses a ON a.id=o.address_id'
     .$whereSql.
     ' ORDER BY o.id DESC LIMIT '.$perPage.' OFFSET '.$offset
 );
 $stmt->execute($params);
 $orders = $stmt->fetchAll();
+
+// Preload items for the hovered order-id tooltip
+$itemsByOrder = [];
+if ($orders) {
+    $ids = array_column($orders, 'id');
+    $in  = implode(',', array_fill(0, count($ids), '?'));
+    $its = $pdo->prepare('SELECT order_id, product_name, variant_label, qty, unit_price, line_total FROM order_items WHERE order_id IN('.$in.')');
+    $its->execute($ids);
+    foreach ($its->fetchAll() as $it) { $itemsByOrder[$it['order_id']][] = $it; }
+}
 
 $adminTitle   = 'Orders';
 $adminSection = 'orders';
@@ -165,45 +179,94 @@ function payment_badge(string $s): string {
             <th>Payment</th>
             <th>Status</th>
             <th>Update status</th>
+            <th>Documents</th>
             <th>Date</th>
           </tr>
         </thead>
         <tbody>
           <?php if (!$orders): ?>
-          <tr><td colspan="7"><span class="ap-hint" style="display:block;padding:14px">No orders match your filters.</span></td></tr>
+          <tr><td colspan="8"><span class="ap-hint" style="display:block;padding:14px">No orders match your filters.</span></td></tr>
           <?php endif; ?>
-          <?php foreach ($orders as $o): ?>
+          <?php foreach ($orders as $o):
+            $mobile = $o['addr_phone'] ?: ($o['user_phone'] ?: '');
+            $items  = $itemsByOrder[$o['id']] ?? [];
+            $addrLine = trim(implode(', ', array_filter([
+                $o['apartment_no'], $o['apartment_name'], $o['area'], $o['landmark'],
+                $o['address_line'], ($o['city']? $o['city'].' - '.$o['pincode'] : ''), $o['state']
+            ])));
+          ?>
           <tr>
-            <td><b><?= e($o['order_no']) ?></b></td>
+            <!-- Order # with items tooltip -->
             <td>
-              <?= e($o['user_name'] ?? 'Guest') ?>
-              <small><?= e($o['email'] ?? '') ?></small>
+              <span class="ap-hover">
+                <b><?= e($o['order_no']) ?></b>
+                <div class="ap-tip ap-tip-wide">
+                  <div class="ap-tip-title">Order items</div>
+                  <table class="ap-tip-table">
+                    <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead>
+                    <tbody>
+                    <?php foreach ($items as $it): ?>
+                      <tr>
+                        <td><?= e($it['product_name']) ?><?= $it['variant_label'] ? ' · '.e($it['variant_label']) : '' ?></td>
+                        <td><?= e((string)(0+$it['qty'])) ?></td>
+                        <td>₹<?= number_format((float)$it['unit_price'],2) ?></td>
+                        <td>₹<?= number_format((float)$it['line_total'],2) ?></td>
+                      </tr>
+                    <?php endforeach; ?>
+                    <?php if(!$items): ?><tr><td colspan="4">No items</td></tr><?php endif; ?>
+                    </tbody>
+                  </table>
+                  <div class="ap-tip-row"><span>Subtotal</span><b>₹<?= number_format((float)$o['subtotal'],2) ?></b></div>
+                  <div class="ap-tip-row"><span>Delivery</span><b>₹<?= number_format((float)$o['delivery_fee'],2) ?></b></div>
+                  <div class="ap-tip-row"><span>Total</span><b>₹<?= number_format((float)$o['total'],2) ?></b></div>
+                </div>
+              </span>
+            </td>
+            <!-- Customer with user-info tooltip; show mobile not email -->
+            <td>
+              <span class="ap-hover">
+                <?= e($o['user_name'] ?? 'Guest') ?>
+                <small>📞 <?= e($mobile ?: '—') ?></small>
+                <div class="ap-tip">
+                  <div class="ap-tip-title">Customer</div>
+                  <div class="ap-tip-line"><b><?= e($o['user_name'] ?? 'Guest') ?></b></div>
+                  <div class="ap-tip-line">📞 <?= e($mobile ?: '—') ?><?= $o['addr_alt'] ? ' · Alt: '.e($o['addr_alt']) : '' ?></div>
+                  <?php if(!empty($o['email'])): ?><div class="ap-tip-line">✉️ <?= e($o['email']) ?></div><?php endif; ?>
+                  <?php if($addrLine): ?><div class="ap-tip-line">📍 <?= e($addrLine) ?></div><?php endif; ?>
+                  <div class="ap-tip-line">🕒 <?= e($o['delivery_slot'] ?: 'Any slot') ?></div>
+                </div>
+              </span>
             </td>
             <td><b>₹<?= number_format((float)$o['total'], 2) ?></b></td>
             <td>
-              <span class="ap-badge <?= payment_badge($o['payment_status']) ?>">
-                <?= e($o['payment_status']) ?>
-              </span>
-              <small><?= e($o['payment_method']) ?></small>
+              <span class="ap-badge <?= payment_badge($o['payment_status']) ?>"><?= e($o['payment_status']) ?></span>
+              <small><?= e(strtoupper($o['payment_method'])) ?></small>
             </td>
             <td>
-              <span class="ap-badge <?= order_badge($o['status']) ?>">
-                <?= e(str_replace('_', ' ', $o['status'])) ?>
-              </span>
+              <span class="ap-badge <?= order_badge($o['status']) ?>"><?= e(str_replace('_', ' ', $o['status'])) ?></span>
             </td>
+            <!-- Auto-save status on change (with confirm) -->
             <td>
-              <form class="ap-inline" method="post">
+              <form class="ap-inline ap-status-form" method="post">
                 <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
                 <input type="hidden" name="id"   value="<?= $o['id'] ?>">
-                <select class="ap-select" name="status" style="min-width:148px;">
+                <select class="ap-select ap-status-select" name="status" data-current="<?= e($o['status']) ?>" style="min-width:148px;">
                   <?php foreach ($statusOptions as $opt): ?>
                     <option value="<?= $opt ?>" <?= $opt === $o['status'] ? 'selected' : '' ?>>
                       <?= ucwords(str_replace('_', ' ', $opt)) ?>
                     </option>
                   <?php endforeach; ?>
                 </select>
-                <button class="ap-btn ap-btn-sm ap-btn-primary">Save</button>
+                <noscript><button class="ap-btn ap-btn-sm ap-btn-primary">Save</button></noscript>
               </form>
+            </td>
+            <!-- Documents -->
+            <td>
+              <div class="ap-doc-links">
+                <a href="<?= url('admin/invoice.php?id='.$o['id'].'&mode=print') ?>" target="_blank">Print</a>
+                <a href="<?= url('admin/invoice.php?id='.$o['id'].'&mode=pdf') ?>">Download</a>
+                <a href="<?= url('admin/label.php?id='.$o['id']) ?>" target="_blank">Label</a>
+              </div>
             </td>
             <td><small><?= e($o['created_at']) ?></small></td>
           </tr>
@@ -225,4 +288,39 @@ function payment_badge(string $s): string {
   <?php endif; ?>
 </div>
 
+<style>
+/* Hover tooltips */
+.ap-hover{position:relative;cursor:help}
+.ap-hover small{display:block;color:#7a8a7b;font-size:11px;margin-top:2px}
+.ap-tip{display:none;position:absolute;left:0;top:100%;z-index:60;background:#fff;border:1px solid #dce5da;border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,.16);padding:12px 14px;min-width:230px;margin-top:6px;font-weight:400;text-align:left}
+.ap-tip-wide{min-width:340px}
+.ap-hover:hover .ap-tip{display:block}
+.ap-tip-title{font-weight:800;color:#12652f;font-size:12px;letter-spacing:.04em;margin-bottom:8px}
+.ap-tip-line{font-size:12.5px;margin:3px 0;color:#2b382e}
+.ap-tip-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}
+.ap-tip-table th,.ap-tip-table td{text-align:left;padding:4px 6px;border-bottom:1px solid #eef3ec}
+.ap-tip-table th:nth-child(n+2),.ap-tip-table td:nth-child(n+2){text-align:right}
+.ap-tip-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0}
+.ap-tip-row:last-child{border-top:1px solid #eef3ec;margin-top:4px;padding-top:5px;font-weight:700}
+.ap-doc-links{display:flex;gap:8px;flex-wrap:wrap}
+.ap-doc-links a{font-size:12px;font-weight:700;color:#12652f;text-decoration:underline}
+.ap-status-saving{opacity:.6}
+</style>
+<script>
+(function(){
+  document.querySelectorAll('.ap-status-select').forEach(function(sel){
+    sel.addEventListener('change',function(){
+      var cur=sel.dataset.current, next=sel.value;
+      if(next===cur) return;
+      var label=sel.options[sel.selectedIndex].text;
+      if(confirm('Change order status to "'+label+'"?')){
+        sel.classList.add('ap-status-saving'); sel.disabled=true;
+        sel.form.submit();
+      } else {
+        sel.value=cur; // revert
+      }
+    });
+  });
+})();
+</script>
 <?php include __DIR__.'/../includes/admin-footer.php'; ?>

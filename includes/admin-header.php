@@ -41,6 +41,7 @@ $_navItems = [
     ['faqs',      '❓', 'FAQs',       url('admin/faqs.php'),         'content'],
     ['users',     '👥', 'Users',      url('admin/users.php'),        'users'],
     ['pincodes',  '📍', 'Service Pincodes', url('admin/pincodes.php'), 'settings'],
+    ['qr',        '🔳', 'Payment QR', url('admin/qr.php'),           'settings'],
     ['settings',  '⚙️',  'Settings',  url('admin/settings.php'),    'settings'],
 ];
 

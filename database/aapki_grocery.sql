@@ -321,6 +321,21 @@ CREATE TABLE `service_pincodes` (
   UNIQUE KEY `uniq_pincode` (`pincode`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `payment_qr`
+--
+
+CREATE TABLE `payment_qr` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `label` varchar(120) DEFAULT NULL,
+  `image` varchar(255) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT INTO `service_pincodes` (`pincode`, `label`, `is_active`) VALUES
 ('110084', 'Burari, Delhi', 1);
 
