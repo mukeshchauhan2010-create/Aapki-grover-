@@ -70,8 +70,25 @@ function save_product_image(array $file, string $uploadDir, string $publicDir): 
     imagecopyresampled($dst, $src, 0,0,0,0,$nw,$nh,$w,$h);
     $id = bin2hex(random_bytes(12));
     if (!is_dir($uploadDir)) mkdir($uploadDir,0750,true);
-    $webpFile = $id.'.webp'; $path = $uploadDir.'/'.$webpFile;
-    if (!function_exists('imagewebp') || !imagewebp($dst, $path, 82)) { imagedestroy($src); imagedestroy($dst); throw new RuntimeException('WEBP processing is unavailable on this server.'); }
+
+    // Prefer WEBP when the server's GD supports it; otherwise fall back to
+    // PNG (keeps transparency — ideal for QR/logos) or JPEG. This keeps uploads
+    // working on servers where GD has no WebP support.
+    $saved = null; $outFile = null;
+    if (function_exists('imagewebp')) {
+        $outFile = $id.'.webp';
+        if (@imagewebp($dst, $uploadDir.'/'.$outFile, 82)) $saved = 'webp';
+    }
+    if (!$saved && function_exists('imagepng')) {
+        $outFile = $id.'.png';
+        if (@imagepng($dst, $uploadDir.'/'.$outFile, 6)) $saved = 'png';
+    }
+    if (!$saved && function_exists('imagejpeg')) {
+        $outFile = $id.'.jpg';
+        if (@imagejpeg($dst, $uploadDir.'/'.$outFile, 85)) $saved = 'jpg';
+    }
     imagedestroy($src); imagedestroy($dst);
-    return ['source'=>$publicDir.'/'.$webpFile, 'webp'=>$publicDir.'/'.$webpFile, 'filename'=>$webpFile];
+    if (!$saved) throw new RuntimeException('Image processing failed: the server\'s GD extension cannot save WEBP, PNG or JPEG.');
+
+    return ['source'=>$publicDir.'/'.$outFile, 'webp'=>$publicDir.'/'.$outFile, 'filename'=>$outFile];
 }
