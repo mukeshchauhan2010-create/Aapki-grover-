@@ -136,3 +136,75 @@ const accountTrigger=document.getElementById('accountTrigger'),accountDropdown=d
 
 
 // ── Hero Banner Slider — handled inline in index.php ─────────
+
+/* ============================================================
+   GEOLOCATION — ask the browser for the visitor's coordinates
+   and POST them to api/save-location.php (saved into the PHP session).
+   Requires HTTPS (or localhost); browsers block geolocation on plain HTTP.
+   Trigger: click any element with id/class "agGeoBtn".
+   ============================================================ */
+(function agGeo(){
+  var AG = window.AAPKI || {base:'/aapkigrocery/'};
+
+  function sendPositionToPHP(position){
+    var lat = position.coords.latitude;
+    var lng = position.coords.longitude;
+    var acc = position.coords.accuracy;
+    var body = 'latitude='+encodeURIComponent(lat)+
+               '&longitude='+encodeURIComponent(lng)+
+               '&accuracy='+encodeURIComponent(acc)+
+               '&csrf='+encodeURIComponent(AG.csrf||'');
+    fetch(AG.base+'api/save-location.php', {
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded','X-CSRF-Token':AG.csrf||''},
+      body: body
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      console.log('Location saved:', d);
+      var ind = document.getElementById('agGeoStatus');
+      if(ind){
+        if(d.ok){
+          var label = [d.area, d.city].filter(Boolean).join(', ');
+          if(d.pincode) label += (label?' — ':'')+d.pincode;
+          ind.textContent = '📍 ' + (label || (lat.toFixed(5)+', '+lng.toFixed(5)));
+        } else {
+          ind.textContent = '⚠ '+(d.message||'Failed');
+        }
+      }
+      // If a pincode was resolved, feed it into the existing serviceability gate
+      // so the visitor doesn't have to type their pincode manually.
+      if(d.ok && d.pincode && typeof agPinSet==='function' && typeof agApplyServiceState==='function'){
+        var served = (d.served === true) || (typeof agIsServed==='function' && agIsServed(d.pincode));
+        agPinSet({pincode:d.pincode, served:served});
+        agApplyServiceState(served);
+      }
+    })
+    .catch(function(err){ console.warn('save-location failed:', err); });
+  }
+
+  function handleError(error){
+    console.warn('Geolocation ERROR('+error.code+'): '+error.message);
+    var ind = document.getElementById('agGeoStatus');
+    if(ind){ ind.textContent = '⚠ '+(error.code===1?'Permission denied':'Location unavailable'); }
+  }
+
+  function requestLocation(){
+    if(!('geolocation' in navigator)){
+      alert('Geolocation is not supported by this browser.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(sendPositionToPHP, handleError, {
+      enableHighAccuracy:true, timeout:10000, maximumAge:0
+    });
+  }
+
+  // Wire up any trigger button on the page.
+  document.addEventListener('click', function(e){
+    var t = e.target.closest('#agGeoBtn, .agGeoBtn');
+    if(t){ e.preventDefault(); requestLocation(); }
+  });
+
+  // Expose for manual/programmatic use.
+  window.agRequestLocation = requestLocation;
+})();

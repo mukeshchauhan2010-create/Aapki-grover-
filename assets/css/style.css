@@ -1130,3 +1130,12 @@ body.ag-not-served .add-to-cart.ag-disabled::after{content:" (not in your area)"
 .refer-code-row input{flex:1;min-width:200px;padding:12px 14px;border:1px solid var(--line,#dce5da);border-radius:10px;font-size:16px;font-weight:700;letter-spacing:.5px;background:#f7faf5}
 .refer-share{margin-top:8px}
 @media(max-width:600px){.refer-code-row input{min-width:0}}
+
+/* ============================================================
+   GEOLOCATION — "Use my location" header button
+   ============================================================ */
+.geo-btn{display:inline-flex;align-items:center;gap:6px;background:#f7faf5;border:1px solid var(--line,#dce5da);color:var(--green,#12652f);font-weight:600;font-size:13px;padding:8px 12px;border-radius:10px;cursor:pointer;line-height:1;transition:background .15s,border-color .15s;max-width:220px}
+.geo-btn:hover{background:#eef5ea;border-color:#bcd3b8}
+.geo-btn .geo-pin{font-size:15px}
+.geo-btn .geo-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:600px){.geo-btn .geo-label{display:none}.geo-btn{padding:8px 10px}}
