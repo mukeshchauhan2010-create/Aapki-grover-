@@ -34,9 +34,27 @@ function agApplyServiceState(served){
 }
 
 /* Pincode prompt modal. */
-function agPinPrompt(){
+function agPinPrompt(opts){
+  opts=opts||{};
   if(document.getElementById('agPinModal')) return;
   var wrap=document.createElement('div'); wrap.className='ag-modal'; wrap.id='agPinModal';
+
+  // Message-only mode: the visitor's captured geo pincode did not match any
+  // active service pincode — show just the "not serviceable" message.
+  if(opts.messageOnly){
+    wrap.innerHTML=
+      '<div class="ag-modal-card ag-pin-card">'+
+        '<div class="ag-pin-head"><b>Deliver to your area</b></div>'+
+        '<div class="ag-modal-body">'+
+          '<p class="ag-pin-msg"><span class="ag-pin-err">'+NOT_SERVED_MSG+'</span></p>'+
+          '<button type="button" class="ag-pin-skip" id="agPinClose">Close</button>'+
+        '</div>'+
+      '</div>';
+    document.body.appendChild(wrap);
+    wrap.querySelector('#agPinClose').addEventListener('click',function(){ try{wrap.remove();}catch(_){} });
+    return;
+  }
+
   wrap.innerHTML=
     '<div class="ag-modal-card ag-pin-card">'+
       '<div class="ag-pin-head"><b>Deliver to your area</b></div>'+
@@ -178,6 +196,13 @@ const accountTrigger=document.getElementById('accountTrigger'),accountDropdown=d
         var served = (d.served === true) || (typeof agIsServed==='function' && agIsServed(d.pincode));
         agPinSet({pincode:d.pincode, served:served});
         agApplyServiceState(served);
+        // Captured geo pincode did NOT match an active service pincode →
+        // show the not-serviceable message only (no pincode input form).
+        if(!served && typeof agPinPrompt==='function'){
+          var existing=document.getElementById('agPinModal');
+          if(existing){ try{existing.remove();}catch(_){} }
+          agPinPrompt({messageOnly:true});
+        }
       }
     })
     .catch(function(err){ console.warn('save-location failed:', err); });
