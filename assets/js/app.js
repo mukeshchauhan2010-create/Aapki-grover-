@@ -10,6 +10,7 @@ const CART_KEY='aapki_cart_v2';
 const AG_BASE=(window.AAPKI&&window.AAPKI.base)||'/aapkigrocery/';
 const SERVED=((window.AAPKI&&window.AAPKI.servedPincodes)||[]).map(String);
 const PIN_KEY='aapki_pincode_v1'; // {pincode, served}
+const PIN_PROMPTED_KEY='aapki_pin_prompted_v1'; // '1' once the auto-prompt has been shown
 var NOT_SERVED_MSG='We are currently working to extend our services to your region. '+
   'Please submit your inquiry via our <a href="'+AG_BASE+'contact-us/">Contact Us</a> page.';
 
@@ -65,12 +66,13 @@ function agPinPrompt(opts){
           '<button type="submit" class="btn btn-primary">Check</button>'+
         '</form>'+
         '<p class="ag-pin-msg" id="agPinMsg"></p>'+
-        '<button type="button" class="ag-pin-skip" id="agPinSkip">Skip for now (continue browsing)</button>'+
+        '<button type="button" class="ag-pin-skip" id="agPinClose">Close</button>'+
       '</div>'+
     '</div>';
   document.body.appendChild(wrap);
   var form=wrap.querySelector('#agPinForm'), input=wrap.querySelector('#agPinInput'), msg=wrap.querySelector('#agPinMsg');
   try{input.focus();}catch(_){}
+  function agCloseModal(){ try{wrap.remove();}catch(_){} }
   form.addEventListener('submit',function(e){
     e.preventDefault();
     var pin=(input.value||'').replace(/\D+/g,'');
@@ -80,16 +82,14 @@ function agPinPrompt(opts){
     if(served){
       msg.innerHTML='<span class="ag-pin-ok">✓ Great! We deliver to '+pin+'.</span>';
       agApplyServiceState(true);
-      setTimeout(function(){try{wrap.remove();}catch(_){}} ,900);
     } else {
       msg.innerHTML='<span class="ag-pin-err">'+NOT_SERVED_MSG+'</span>';
       agApplyServiceState(false);
     }
+    // Auto-close the popup 5 seconds after the pincode is entered.
+    setTimeout(agCloseModal, 5000);
   });
-  wrap.querySelector('#agPinSkip').addEventListener('click',function(){
-    try{wrap.remove();}catch(_){}
-    if(!(agPinGet()&&agPinGet().served)) agApplyServiceState(false);
-  });
+  wrap.querySelector('#agPinClose').addEventListener('click',agCloseModal);
 }
 
 /* Clicking a disabled add-to-cart / login re-opens the pincode prompt. */
@@ -108,11 +108,20 @@ document.addEventListener('click',function(e){
   var saved=agPinGet();
   if(saved && saved.pincode){ agApplyServiceState(!!saved.served); if(saved.served) return; }
   else { agApplyServiceState(false); }
+  // Show the auto-prompt only ONCE per visitor (across all pages). If it has
+  // already been shown, don't open it again automatically.
+  try{ if(localStorage.getItem(PIN_PROMPTED_KEY)==='1') return; }catch(_){}
   // Ask for the pincode shortly after load (not on the auth/cart pages where it would interrupt).
   var path=location.pathname||'';
   var skip=/\/(login|register|cart)(\.php|\/)/i.test(path) || /\/auth\//i.test(path);
   if(skip) return;
-  setTimeout(function(){ var s=agPinGet(); if(!(s&&s.served)) agPinPrompt(); }, 1200);
+  setTimeout(function(){
+    var s=agPinGet();
+    if(!(s&&s.served)){
+      try{ localStorage.setItem(PIN_PROMPTED_KEY,'1'); }catch(_){}
+      agPinPrompt();
+    }
+  }, 1200);
 })();
 
 const getCart=()=>{try{return JSON.parse(localStorage.getItem(CART_KEY)||'[]')}catch{return[]}};
