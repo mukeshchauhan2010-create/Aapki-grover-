@@ -3,4 +3,4 @@
 $servedPins = [];
 try { $servedPins = $pdo->query('SELECT pincode FROM service_pincodes WHERE is_active=1')->fetchAll(PDO::FETCH_COLUMN); } catch(Throwable $e) {}
 ?>
-<script>window.AAPKI={base:'<?=e(url())?>',cartMode:'<?=e(setting($pdo,'cart_mode','coming_soon'))?>',servedPincodes:<?=json_encode(array_values($servedPins))?>};</script><script defer src="<?=url('assets/js/app.js')?>?v=<?=@filemtime(__DIR__.'/../assets/js/app.js')?:time()?>"></script></body></html>
+<script>window.AAPKI={base:'<?=e(url())?>',cartMode:'<?=e(setting($pdo,'cart_mode','coming_soon'))?>',servedPincodes:<?=json_encode(array_values($servedPins))?>,csrf:'<?=e(csrf_token())?>'};</script><script defer src="<?=url('assets/js/app.js')?>?v=<?=@filemtime(__DIR__.'/../assets/js/app.js')?:time()?>"></script></body></html>
