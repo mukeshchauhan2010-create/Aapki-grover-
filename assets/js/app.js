@@ -11,11 +11,17 @@ const AG_BASE=(window.AAPKI&&window.AAPKI.base)||'/aapkigrocery/';
 const SERVED=((window.AAPKI&&window.AAPKI.servedPincodes)||[]).map(String);
 const PIN_KEY='aapki_pincode_v1'; // {pincode, served}
 const PIN_PROMPTED_KEY='aapki_pin_prompted_v1'; // '1' once the auto-prompt has been shown
+const PIN_COOKIE='aapki_pin'; // captured pincode persisted across visits
+const CHECK_COOKIE='aapki_geo_checked'; // '1' once geolocation has been attempted
 var NOT_SERVED_MSG='We are currently working to extend our services to your region. '+
   'Please submit your inquiry via our <a href="'+AG_BASE+'contact-us/">Contact Us</a> page.';
 
+/* Cookie helpers (persist across revisits, incl. new sessions). */
+function agSetCookie(name,val,days){var d=new Date();d.setTime(d.getTime()+(days*864e5));document.cookie=name+'='+encodeURIComponent(val)+';expires='+d.toUTCString()+';path=/;SameSite=Lax';}
+function agGetCookie(name){var m=document.cookie.match('(?:^|; )'+name.replace(/([.$?*|{}()\[\]\\\/\+^])/g,'\\$1')+'=([^;]*)');return m?decodeURIComponent(m[1]):null;}
+
 function agPinGet(){try{return JSON.parse(localStorage.getItem(PIN_KEY)||'null');}catch(_){return null;}}
-function agPinSet(o){try{localStorage.setItem(PIN_KEY,JSON.stringify(o));}catch(_){}}
+function agPinSet(o){try{localStorage.setItem(PIN_KEY,JSON.stringify(o));}catch(_){} if(o&&o.pincode){agSetCookie(PIN_COOKIE,o.pincode,180);}}
 function agIsServed(pin){pin=(''+(pin||'')).replace(/\D+/g,'');return pin!=='' && SERVED.indexOf(pin)!==-1;}
 
 /* Apply served / not-served state to the whole page. */
@@ -45,14 +51,20 @@ function agPinPrompt(opts){
   if(opts.messageOnly){
     wrap.innerHTML=
       '<div class="ag-modal-card ag-pin-card">'+
-        '<div class="ag-pin-head"><b>Deliver to your area</b></div>'+
+        '<div class="ag-pin-head"><b>Deliver to your area</b><button type="button" class="ag-pin-x" id="agPinX" aria-label="Close">×</button></div>'+
         '<div class="ag-modal-body">'+
           '<p class="ag-pin-msg"><span class="ag-pin-err">'+NOT_SERVED_MSG+'</span></p>'+
+          '<p class="ag-pin-count">Closing in <b>10</b>s…</p>'+
           '<button type="button" class="ag-pin-skip" id="agPinClose">Close</button>'+
         '</div>'+
       '</div>';
     document.body.appendChild(wrap);
-    wrap.querySelector('#agPinClose').addEventListener('click',function(){ try{wrap.remove();}catch(_){} });
+    var cntEl=wrap.querySelector('.ag-pin-count b'), left=10, timer=null, auto=null;
+    function close(){ try{clearInterval(timer);clearTimeout(auto);wrap.remove();}catch(_){} }
+    wrap.querySelector('#agPinClose').addEventListener('click',close);
+    wrap.querySelector('#agPinX').addEventListener('click',close);
+    timer=setInterval(function(){left--; if(cntEl)cntEl.textContent=left; if(left<=0)clearInterval(timer);},1000);
+    auto=setTimeout(close,10000); // auto-close after 10 seconds
     return;
   }
 
@@ -102,26 +114,32 @@ document.addEventListener('click',function(e){
   }
 }, true);
 
-/* Boot the serviceability gate — prompt soon after the page loads. */
+/* Boot the serviceability gate — auto-detect location, show popup once. */
 (function agServiceBoot(){
   if(!SERVED.length){ agApplyServiceState(true); return; } // not configured → don't gate
-  var saved=agPinGet();
-  if(saved && saved.pincode){ agApplyServiceState(!!saved.served); if(saved.served) return; }
-  else { agApplyServiceState(false); }
-  // Show the auto-prompt only ONCE per visitor (across all pages). If it has
-  // already been shown, don't open it again automatically.
-  try{ if(localStorage.getItem(PIN_PROMPTED_KEY)==='1') return; }catch(_){}
-  // Ask for the pincode shortly after load (not on the auth/cart pages where it would interrupt).
+
+  // 1) Revisit: if we already captured a pincode (cookie), apply it and stop —
+  //    no popup, no re-asking location.
+  var cookiePin = agGetCookie(PIN_COOKIE);
+  if(cookiePin){
+    var served = agIsServed(cookiePin);
+    agPinSet({pincode:cookiePin, served:served});
+    agApplyServiceState(served);
+    return; // already checked on a previous visit → never auto-popup again
+  }
+
+  // Default state until we know: not served (buttons gated).
+  agApplyServiceState(false);
+
+  // Don't interrupt on auth/cart pages.
   var path=location.pathname||'';
-  var skip=/\/(login|register|cart)(\.php|\/)/i.test(path) || /\/auth\//i.test(path);
-  if(skip) return;
-  setTimeout(function(){
-    var s=agPinGet();
-    if(!(s&&s.served)){
-      try{ localStorage.setItem(PIN_PROMPTED_KEY,'1'); }catch(_){}
-      agPinPrompt();
-    }
-  }, 1200);
+  if(/\/(login|register|cart)(\.php|\/)/i.test(path) || /\/auth\//i.test(path)) return;
+
+  // 2) First visit: auto-detect the visitor's location once.
+  if(agGetCookie(CHECK_COOKIE)==='1') return; // already attempted this visit-cycle
+  if(typeof window.agRequestLocation==='function'){
+    setTimeout(function(){ window.agRequestLocation(); }, 800);
+  }
 })();
 
 const getCart=()=>{try{return JSON.parse(localStorage.getItem(CART_KEY)||'[]')}catch{return[]}};
@@ -188,29 +206,25 @@ const accountTrigger=document.getElementById('accountTrigger'),accountDropdown=d
     })
     .then(function(r){ return r.json(); })
     .then(function(d){
-      console.log('Location saved:', d);
-      var ind = document.getElementById('agGeoStatus');
-      if(ind){
-        if(d.ok){
-          var label = [d.area, d.city].filter(Boolean).join(', ');
-          if(d.pincode) label += (label?' — ':'')+d.pincode;
-          ind.textContent = '📍 ' + (label || (lat.toFixed(5)+', '+lng.toFixed(5)));
-        } else {
-          ind.textContent = '⚠ '+(d.message||'Failed');
-        }
-      }
-      // If a pincode was resolved, feed it into the existing serviceability gate
-      // so the visitor doesn't have to type their pincode manually.
+      // Mark that we've attempted a location check (so we don't re-ask repeatedly).
+      try{ if(typeof agSetCookie==='function') agSetCookie(CHECK_COOKIE,'1',180); }catch(_){}
+
+      // If a pincode was resolved, feed it into the serviceability gate and
+      // remember it in a cookie so revisits skip the check entirely.
       if(d.ok && d.pincode && typeof agPinSet==='function' && typeof agApplyServiceState==='function'){
         var served = (d.served === true) || (typeof agIsServed==='function' && agIsServed(d.pincode));
-        agPinSet({pincode:d.pincode, served:served});
+        agPinSet({pincode:d.pincode, served:served}); // also writes the pincode cookie
         agApplyServiceState(served);
-        // Captured geo pincode did NOT match an active service pincode →
-        // show the not-serviceable message only (no pincode input form).
+
+        // Not serviceable → show the message popup ONCE (Close + 10s auto-close).
         if(!served && typeof agPinPrompt==='function'){
-          var existing=document.getElementById('agPinModal');
-          if(existing){ try{existing.remove();}catch(_){} }
-          agPinPrompt({messageOnly:true});
+          var alreadyShown=false; try{alreadyShown=localStorage.getItem(PIN_PROMPTED_KEY)==='1';}catch(_){}
+          if(!alreadyShown){
+            try{localStorage.setItem(PIN_PROMPTED_KEY,'1');}catch(_){}
+            var existing=document.getElementById('agPinModal');
+            if(existing){ try{existing.remove();}catch(_){} }
+            agPinPrompt({messageOnly:true});
+          }
         }
       }
     })
@@ -219,26 +233,18 @@ const accountTrigger=document.getElementById('accountTrigger'),accountDropdown=d
 
   function handleError(error){
     console.warn('Geolocation ERROR('+error.code+'): '+error.message);
-    var ind = document.getElementById('agGeoStatus');
-    if(ind){ ind.textContent = '⚠ '+(error.code===1?'Permission denied':'Location unavailable'); }
+    // Location denied/unavailable: mark as attempted so we don't keep re-asking,
+    // and leave the gate in the default (not-served) state.
+    try{ if(typeof agSetCookie==='function') agSetCookie(CHECK_COOKIE,'1',1); }catch(_){}
   }
 
   function requestLocation(){
-    if(!('geolocation' in navigator)){
-      alert('Geolocation is not supported by this browser.');
-      return;
-    }
+    if(!('geolocation' in navigator)){ return; }
     navigator.geolocation.getCurrentPosition(sendPositionToPHP, handleError, {
       enableHighAccuracy:true, timeout:10000, maximumAge:0
     });
   }
 
-  // Wire up any trigger button on the page.
-  document.addEventListener('click', function(e){
-    var t = e.target.closest('#agGeoBtn, .agGeoBtn');
-    if(t){ e.preventDefault(); requestLocation(); }
-  });
-
-  // Expose for manual/programmatic use.
+  // Expose for the boot logic (auto-trigger) and any programmatic use.
   window.agRequestLocation = requestLocation;
 })();
