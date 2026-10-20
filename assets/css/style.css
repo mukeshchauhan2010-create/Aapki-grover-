@@ -1167,7 +1167,10 @@ body.ag-not-served .add-to-cart.ag-disabled::after{content:" (not in your area)"
 .site-header .nav.container{display:flex !important;align-items:center !important;gap:16px !important;flex-wrap:wrap !important;text-align:left !important;justify-content:flex-start !important}
 .site-header .nav .brand{flex:0 0 auto !important;min-width:0 !important}
 .site-header .nav .search{flex:1 1 320px !important;order:0 !important;min-width:200px !important}
-.site-header .nav .nav-actions{flex:0 0 auto !important;margin-left:auto !important;display:flex !important;align-items:center !important;gap:12px !important}
+.site-header .nav .nav-actions{flex:0 0 auto !important;margin-left:auto !important;display:flex !important;align-items:center !important;gap:12px !important;flex-wrap:nowrap !important}
+.site-header .nav .nav-actions > *{flex:0 0 auto}
+.site-header .nav .nav-actions .account-menu{display:flex;align-items:center}
+.site-header .nav .nav-actions #cartLink{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 
 /* Tablet & phone: brand + actions on top row, search full width below */
 @media(max-width:900px){
