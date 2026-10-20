@@ -70,9 +70,9 @@ function agPinPrompt(opts){
 
   wrap.innerHTML=
     '<div class="ag-modal-card ag-pin-card">'+
-      '<div class="ag-pin-head"><b>Deliver to your area</b></div>'+
+      '<div class="ag-pin-head"><b>Deliver to your area</b><button type="button" class="ag-pin-x" id="agPinX" aria-label="Close">&times;</button></div>'+
       '<div class="ag-modal-body">'+
-        '<p>Please enter your pincode to check if we deliver to you.</p>'+
+        '<p>Enter your pincode to check if we deliver to you.</p>'+
         '<form id="agPinForm" class="ag-pin-form">'+
           '<input id="agPinInput" inputmode="numeric" pattern="[1-9][0-9]{5}" maxlength="6" placeholder="6-digit pincode" required>'+
           '<button type="submit" class="btn btn-primary">Check</button>'+
@@ -84,13 +84,15 @@ function agPinPrompt(opts){
   document.body.appendChild(wrap);
   var form=wrap.querySelector('#agPinForm'), input=wrap.querySelector('#agPinInput'), msg=wrap.querySelector('#agPinMsg');
   try{input.focus();}catch(_){}
-  function agCloseModal(){ try{wrap.remove();}catch(_){} }
+  var acTimer=null;
+  function agCloseModal(){ try{clearTimeout(acTimer);wrap.remove();}catch(_){} }
   form.addEventListener('submit',function(e){
     e.preventDefault();
     var pin=(input.value||'').replace(/\D+/g,'');
     if(!/^[1-9][0-9]{5}$/.test(pin)){ msg.innerHTML='<span class="ag-pin-err">Enter a valid 6-digit pincode.</span>'; return; }
     var served=agIsServed(pin);
-    agPinSet({pincode:pin,served:served});
+    agPinSet({pincode:pin,served:served}); // persists pincode cookie (180d)
+    try{ if(typeof agSetCookie==='function') agSetCookie(CHECK_COOKIE,'1',180); }catch(_){}
     if(served){
       msg.innerHTML='<span class="ag-pin-ok">✓ Great! We deliver to '+pin+'.</span>';
       agApplyServiceState(true);
@@ -99,9 +101,10 @@ function agPinPrompt(opts){
       agApplyServiceState(false);
     }
     // Auto-close the popup 5 seconds after the pincode is entered.
-    setTimeout(agCloseModal, 5000);
+    acTimer=setTimeout(agCloseModal, 5000);
   });
   wrap.querySelector('#agPinClose').addEventListener('click',agCloseModal);
+  var xBtn=wrap.querySelector('#agPinX'); if(xBtn) xBtn.addEventListener('click',agCloseModal);
 }
 
 /* Clicking a disabled add-to-cart / login re-opens the pincode prompt. */
@@ -233,13 +236,17 @@ const accountTrigger=document.getElementById('accountTrigger'),accountDropdown=d
 
   function handleError(error){
     console.warn('Geolocation ERROR('+error.code+'): '+error.message);
-    // Location denied/unavailable: mark as attempted so we don't keep re-asking,
-    // and leave the gate in the default (not-served) state.
-    try{ if(typeof agSetCookie==='function') agSetCookie(CHECK_COOKIE,'1',1); }catch(_){}
+    // Location denied/unavailable/timeout → fall back to asking the visitor to
+    // TYPE their pincode, so serviceability can still be checked. Show once.
+    var alreadyShown=false; try{alreadyShown=localStorage.getItem(PIN_PROMPTED_KEY)==='1';}catch(_){}
+    if(!alreadyShown && typeof agPinPrompt==='function'){
+      try{localStorage.setItem(PIN_PROMPTED_KEY,'1');}catch(_){}
+      agPinPrompt(); // pincode-input mode
+    }
   }
 
   function requestLocation(){
-    if(!('geolocation' in navigator)){ return; }
+    if(!('geolocation' in navigator)){ handleError({code:2,message:'Geolocation unsupported'}); return; }
     navigator.geolocation.getCurrentPosition(sendPositionToPHP, handleError, {
       enableHighAccuracy:true, timeout:10000, maximumAge:0
     });
