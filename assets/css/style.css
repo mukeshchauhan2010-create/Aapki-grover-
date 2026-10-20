@@ -1191,3 +1191,6 @@ body.ag-not-served .add-to-cart.ag-disabled::after{content:" (not in your area)"
 @media(max-width:380px){
   .site-header .nav .pin-indicator{order:5 !important;flex-basis:100% !important;justify-content:center !important}
 }
+
+/* Single-variant products: show the pack label as plain text (no dropdown) */
+.variant-single{display:inline-block;font-size:13px;font-weight:700;color:var(--muted,#68746b);padding:4px 0}
