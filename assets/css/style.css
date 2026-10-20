@@ -1164,27 +1164,27 @@ body.ag-not-served .add-to-cart.ag-disabled::after{content:" (not in your area)"
    Row 1: brand (left) + actions (right). Search: inline on desktop,
    full-width second row on tablet/mobile. Keeps the pincode pill tidy.
    ============================================================ */
-.site-header .nav{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.site-header .brand{flex:0 0 auto;min-width:0}
-.site-header .search{flex:1 1 320px;order:0;min-width:200px}
-.site-header .nav-actions{flex:0 0 auto;margin-left:auto;display:flex;align-items:center;gap:12px}
+.site-header .nav.container{display:flex !important;align-items:center !important;gap:16px !important;flex-wrap:wrap !important;text-align:left !important;justify-content:flex-start !important}
+.site-header .nav .brand{flex:0 0 auto !important;min-width:0 !important}
+.site-header .nav .search{flex:1 1 320px !important;order:0 !important;min-width:200px !important}
+.site-header .nav .nav-actions{flex:0 0 auto !important;margin-left:auto !important;display:flex !important;align-items:center !important;gap:12px !important}
 
 /* Tablet & phone: brand + actions on top row, search full width below */
 @media(max-width:900px){
-  .site-header .search{order:3;flex-basis:100%;min-width:0}
-  .site-header .nav-actions{margin-left:auto}
+  .site-header .nav .search{order:3 !important;flex-basis:100% !important;min-width:0 !important}
+  .site-header .nav .nav-actions{margin-left:auto !important}
 }
 
 /* Phone: tighten spacing, allow actions to wrap neatly if needed */
 @media(max-width:600px){
-  .site-header .nav{gap:10px 12px;padding:10px 0}
-  .site-header .nav-actions{gap:10px;flex-wrap:wrap;justify-content:flex-end}
-  .site-header .brand img{width:150px;height:auto}
+  .site-header .nav.container{gap:10px 12px !important;padding:10px 0 !important}
+  .site-header .nav .nav-actions{gap:10px !important;flex-wrap:wrap !important;justify-content:flex-end !important}
+  .site-header .nav .brand img{width:150px !important;height:auto !important}
   .pin-indicator{font-size:11px;padding:6px 10px}
   .account-trigger{padding:4px}
 }
 
 /* Very small phones: pincode pill can take its own line under the logo */
 @media(max-width:380px){
-  .site-header .pin-indicator{order:5;flex-basis:100%;justify-content:center}
+  .site-header .nav .pin-indicator{order:5 !important;flex-basis:100% !important;justify-content:center !important}
 }
