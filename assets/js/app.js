@@ -37,7 +37,12 @@ function agApplyServiceState(served){
     else { a.classList.remove('ag-disabled'); a.removeAttribute('aria-disabled'); }
   });
   var ind=document.getElementById('agPinIndicator');
-  if(ind){ var p=agPinGet(); ind.textContent = (p&&p.pincode)? ('📍 '+p.pincode+(served?'':' · not serviceable')) : '📍 Set pincode'; }
+  if(ind){
+    var p=agPinGet();
+    if(p&&p.pincode){ ind.innerHTML = '📍 '+(served?'Deliver to: <b>'+p.pincode+'</b>':'<b>'+p.pincode+'</b> · not serviceable'); }
+    else { ind.textContent = '📍 Set pincode'; }
+    ind.classList.toggle('pin-unserved', !served && !!(p&&p.pincode));
+  }
 }
 
 /* Pincode prompt modal. */
@@ -117,18 +122,29 @@ document.addEventListener('click',function(e){
   }
 }, true);
 
+/* Header pincode indicator → let the visitor change their pincode anytime. */
+document.addEventListener('click',function(e){
+  var ind=e.target.closest('#agPinIndicator');
+  if(ind){ e.preventDefault(); if(typeof agPinPrompt==='function') agPinPrompt(); }
+});
+
 /* Boot the serviceability gate — auto-detect location, show popup once. */
 (function agServiceBoot(){
   if(!SERVED.length){ agApplyServiceState(true); return; } // not configured → don't gate
 
-  // 1) Revisit: if we already captured a pincode (cookie), apply it and stop —
-  //    no popup, no re-asking location.
+  // 1) Revisit: if we already captured a pincode (cookie), apply it.
   var cookiePin = agGetCookie(PIN_COOKIE);
   if(cookiePin){
     var served = agIsServed(cookiePin);
     agPinSet({pincode:cookiePin, served:served});
     agApplyServiceState(served);
-    return; // already checked on a previous visit → never auto-popup again
+    if(served) return; // still serviceable → nothing more to do
+    // Stored pincode is NO LONGER in the active served list (admin changed
+    // service areas, or it was never served). Re-prompt so they can update it.
+    var path0=location.pathname||'';
+    if(/\/(login|register|cart)(\.php|\/)/i.test(path0) || /\/auth\//i.test(path0)) return;
+    setTimeout(function(){ if(typeof agPinPrompt==='function') agPinPrompt(); }, 800);
+    return;
   }
 
   // Default state until we know: not served (buttons gated).

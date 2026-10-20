@@ -1145,3 +1145,16 @@ body.ag-not-served .add-to-cart.ag-disabled::after{content:" (not in your area)"
 .ag-pin-x{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:transparent;border:0;color:#fff;font-size:24px;line-height:1;cursor:pointer;padding:2px 6px}
 .ag-pin-count{font-size:12px;color:#68746b;margin:8px 0 2px}
 .ag-pin-count b{color:var(--green,#12652f)}
+
+/* ============================================================
+   HEADER PINCODE INDICATOR (click to set/change delivery pincode)
+   ============================================================ */
+.pin-indicator{display:inline-flex;align-items:center;gap:4px;background:#f0f5ee;border:1px solid var(--line,#dce5da);
+  color:var(--green,#12652f);font-weight:700;font-size:13px;padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.pin-indicator:hover{background:#e6f1e2}
+.pin-indicator b{font-weight:800}
+.pin-indicator.pin-unserved{background:#fff3dc;border-color:#f0c870;color:#8a5a00}
+@media(max-width:600px){
+  .pin-indicator{font-size:11px;padding:6px 9px}
+  .pin-indicator b{font-size:11px}
+}
