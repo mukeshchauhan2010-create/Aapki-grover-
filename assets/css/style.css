@@ -1158,3 +1158,33 @@ body.ag-not-served .add-to-cart.ag-disabled::after{content:" (not in your area)"
   .pin-indicator{font-size:11px;padding:6px 9px}
   .pin-indicator b{font-size:11px}
 }
+
+/* ============================================================
+   HEADER LAYOUT FIX (overrides earlier conflicting nav rules)
+   Row 1: brand (left) + actions (right). Search: inline on desktop,
+   full-width second row on tablet/mobile. Keeps the pincode pill tidy.
+   ============================================================ */
+.site-header .nav{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.site-header .brand{flex:0 0 auto;min-width:0}
+.site-header .search{flex:1 1 320px;order:0;min-width:200px}
+.site-header .nav-actions{flex:0 0 auto;margin-left:auto;display:flex;align-items:center;gap:12px}
+
+/* Tablet & phone: brand + actions on top row, search full width below */
+@media(max-width:900px){
+  .site-header .search{order:3;flex-basis:100%;min-width:0}
+  .site-header .nav-actions{margin-left:auto}
+}
+
+/* Phone: tighten spacing, allow actions to wrap neatly if needed */
+@media(max-width:600px){
+  .site-header .nav{gap:10px 12px;padding:10px 0}
+  .site-header .nav-actions{gap:10px;flex-wrap:wrap;justify-content:flex-end}
+  .site-header .brand img{width:150px;height:auto}
+  .pin-indicator{font-size:11px;padding:6px 10px}
+  .account-trigger{padding:4px}
+}
+
+/* Very small phones: pincode pill can take its own line under the logo */
+@media(max-width:380px){
+  .site-header .pin-indicator{order:5;flex-basis:100%;justify-content:center}
+}
