@@ -9,6 +9,7 @@ $keys = [
     'default_meta_title','default_meta_description','default_meta_keywords',
     'razorpay_enabled','razorpay_key_id','razorpay_key_secret','razorpay_webhook_secret',
     'ticker_enabled','ticker_1','ticker_2','ticker_3','ticker_4','ticker_5',
+    'process_enabled','process_1','process_2','process_3','process_4','process_5',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['csrf'] ?? null)) {
@@ -153,6 +154,39 @@ function on_off(PDO $pdo, string $key, string $name): string {
       <?php endfor; ?>
     </div>
     <span class="ap-hint">Empty messages are skipped. The ticker shows only when enabled and at least one message has text.</span>
+  </div>
+</div>
+
+<!-- ── Header process steps (top bar) ────────────────────────── -->
+<?php
+// Current/default lines so the strip keeps showing its original text until edited.
+$processDefaults = [
+  1 => '🌅 Picked fresh in the morning from farms',
+  2 => '🧺 Graded, sorted, washed & packed by afternoon',
+  3 => '🚚 Then delivered to you',
+  4 => '',
+  5 => '',
+];
+?>
+<div class="ap-card">
+  <div class="ap-card-header"><h2 class="ap-card-title">🌿 Header process steps</h2></div>
+  <div class="ap-card-body">
+    <div class="ap-form-grid">
+      <div class="ap-field">
+        <label class="ap-label">Process steps enabled</label>
+        <?= on_off($pdo,'process_enabled','process_enabled') ?>
+        <span class="ap-hint">The small strip above the logo (farm → sorted → delivered).</span>
+      </div>
+    </div>
+    <div class="ap-form-grid">
+      <?php for($i=1;$i<=5;$i++): ?>
+      <div class="ap-field">
+        <label class="ap-label">Step <?= $i ?></label>
+        <input class="ap-input" name="process_<?= $i ?>" value="<?= e(setting($pdo,'process_'.$i,$processDefaults[$i])) ?>" placeholder="e.g. 🚚 Then delivered to you">
+      </div>
+      <?php endfor; ?>
+    </div>
+    <span class="ap-hint">Empty steps are skipped. You can use emoji. Up to 5 steps; the strip shows only when enabled and at least one step has text.</span>
   </div>
 </div>
 
