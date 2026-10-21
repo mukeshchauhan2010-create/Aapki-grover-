@@ -609,12 +609,13 @@ body.admin-body main { display: block; }
 .hero-slider {
   position: relative;
   overflow: hidden;
-  background: #1a3c23;
+  background: transparent;
   width: min(1180px, 92%);
   margin: 0 auto;
   border-radius: 18px;
-  /* Height follows the banner artwork's own 3:1 ratio so nothing is cropped */
-  aspect-ratio: 1440 / 480;
+  /* aspect-ratio is set inline per-page from the first banner's real
+     dimensions so the box matches the image exactly (no crop, no side bars). */
+  aspect-ratio: 2.78 / 1;
 }
 /* Fallback for very old browsers without aspect-ratio support */
 @supports not (aspect-ratio: 1 / 1){ .hero-slider{ height: 393px; } }
@@ -638,7 +639,7 @@ body.admin-body main { display: block; }
 .hero-slide img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover; /* box matches the image ratio, so cover shows it all without bars */
   object-position: center;
   display: block;
   user-select: none;

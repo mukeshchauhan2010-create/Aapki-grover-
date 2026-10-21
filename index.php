@@ -38,11 +38,19 @@ $subCats=[];
 foreach($pdo->query('SELECT * FROM categories WHERE is_active=1 AND parent_id IS NOT NULL ORDER BY sort_order,id') as $sc)
     $subCats[$sc['parent_id']][]=$sc;
 $banners=$pdo->query("SELECT * FROM banners WHERE is_active=1 ORDER BY sort_order,id ASC")->fetchAll();if(!$banners)$banners=[['id'=>0,'title'=>'','subtitle'=>'','image'=>'assets/images/banners/home-farm-to-home.webp','link'=>'']];$preloadImage=$banners[0]['image']??'assets/images/banners/home-farm-to-home.webp';if(!preg_match('~^https?://~i',$preloadImage))$preloadImage=url(ltrim($preloadImage,'/'));$popup=setting_bool($pdo,'store_popup_enabled');
+// Measure the first banner's real dimensions so the hero box matches the image
+// exactly (no cropping, no dark side-bars) whatever ratio was uploaded.
+$heroRatio='2.78'; // sensible default if we can't read the file (e.g. remote URL)
+$firstImg=$banners[0]['image']??'';
+if($firstImg && !preg_match('~^https?://~i',$firstImg)){
+  $fp=__DIR__.'/'.ltrim($firstImg,'/');
+  if(is_file($fp)){ $dim=@getimagesize($fp); if($dim && !empty($dim[1])){ $heroRatio=rtrim(rtrim(number_format($dim[0]/$dim[1],4,'.',''),'0'),'.'); } }
+}
 include __DIR__.'/includes/header.php';
 ?>
 <?php if($page===1 && !$q && !$catRow): ?>
 <section class="hero" aria-label="Featured banners">
-  <div class="hero-slider" id="heroSlider" data-autoplay="5000">
+  <div class="hero-slider" id="heroSlider" data-autoplay="5000" style="aspect-ratio:<?=e($heroRatio)?>/1">
 
     <!-- Slides track -->
     <div class="hero-track" id="heroTrack">
