@@ -15,11 +15,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['csrf'] ?? null)
 $fName = trim($_GET['q'] ?? '');
 $fCat  = (int)($_GET['cat'] ?? 0);
 
-$where = []; $params = [];
+$where = ['p.is_active=1']; $params = [];   // active products only
 if ($fName !== '') { $where[] = '(p.name LIKE ? OR p.sku LIKE ?)'; $params[] = '%'.$fName.'%'; $params[] = '%'.$fName.'%'; }
 if ($fCat > 0)     { $where[] = 'p.category_id = ?'; $params[] = $fCat; }
-$whereSql = $where ? (' WHERE '.implode(' AND ', $where)) : '';
+$whereSql = ' WHERE '.implode(' AND ', $where);
 $hasFilter = ($fName !== '' || $fCat > 0);
+
+// Count archived for the toolbar link
+$archivedCount = (int)$pdo->query('SELECT COUNT(*) FROM products WHERE is_active=0')->fetchColumn();
 
 $stmt = $pdo->prepare(
     'SELECT p.*,c.name category_name FROM products p
@@ -41,7 +44,10 @@ include __DIR__.'/../includes/admin-header.php';
 <div class="ap-card">
   <div class="ap-card-header">
     <h2 class="ap-card-title">Product list</h2>
-    <a class="ap-btn ap-btn-primary ap-btn-sm" href="<?= url('admin/product-add.php') ?>">+ Add Product</a>
+    <div style="display:flex;gap:8px;">
+      <a class="ap-btn ap-btn-sm" href="<?= url('admin/products-archived.php') ?>">🗄️ Archived<?= $archivedCount ? ' ('.$archivedCount.')' : '' ?></a>
+      <a class="ap-btn ap-btn-primary ap-btn-sm" href="<?= url('admin/product-add.php') ?>">+ Add Product</a>
+    </div>
   </div>
   <div class="ap-card-body">
     <form method="get" class="ap-form">
