@@ -28,23 +28,30 @@ $_auRole  = ucwords(str_replace('_', ' ', $_au['role_slug'] ?? 'admin'));
 $_auInit  = strtoupper(mb_substr($_auName, 0, 1));
 
 // Nav items: [section-key, icon, label, url, permission]
+// A row with key '__group' renders a section heading (label in icon slot unused).
 $_navItems = [
     ['dashboard', '🏠', 'Dashboard',  url('admin/'),                 null],
     ['orders',    '📦', 'Orders',     url('admin/orders.php'),       'orders'],
+
+    ['__group', '', 'Product Manager', '', 'catalog'],
     ['products',  '🥬', 'Products',   url('admin/products.php'),     'catalog'],
-    ['import',    '⬆️', 'Import',     url('admin/import.php'),       'catalog'],
     ['categories','🗂️',  'Categories', url('admin/categories.php'),  'catalog'],
+    ['import',    '⬆️', 'Import',     url('admin/import.php'),       'catalog'],
     ['inventory', '📊', 'Inventory',  url('admin/inventory.php'),    'catalog'],
     ['suppliers', '🧑‍🌾', 'Suppliers', url('admin/suppliers.php'),    'catalog'],
     ['purchases', '🧾', 'Purchases',  url('admin/purchases.php'),    'catalog'],
     ['inventory-report', '📈', 'Profit Report', url('admin/inventory-report.php'), 'catalog'],
-    ['coupons',   '🎟️',  'Coupons',   url('admin/coupons.php'),      'settings'],
-    ['content',   '🖼️',  'Content',   url('admin/content.php'),      'content'],
+
+    ['__group', '', 'Content', '', 'content'],
+    ['content',   '🖼️',  'Banner & popup', url('admin/content.php'), 'content'],
     ['pages',     '📄', 'Pages',      url('admin/pages.php'),        'content'],
     ['faqs',      '❓', 'FAQs',       url('admin/faqs.php'),         'content'],
-    ['users',     '👥', 'Users',      url('admin/users.php'),        'users'],
+
+    ['__group', '', 'Store', '', 'settings'],
+    ['coupons',   '🎟️',  'Coupons',   url('admin/coupons.php'),      'settings'],
     ['pincodes',  '📍', 'Service Pincodes', url('admin/pincodes.php'), 'settings'],
     ['qr',        '🔳', 'Payment QR', url('admin/qr.php'),           'settings'],
+    ['users',     '👥', 'Users',      url('admin/users.php'),        'users'],
     ['settings',  '⚙️',  'Settings',  url('admin/settings.php'),    'settings'],
 ];
 
@@ -84,10 +91,14 @@ $_flash = get_flash();
       <div class="admin-nav-section">Main</div>
       <?php foreach ($_navItems as [$key, $icon, $label, $href, $perm]): ?>
         <?php if ($perm && !user_can($pdo, $perm)) continue; ?>
-        <a href="<?= e($href) ?>" class="<?= $adminSection === $key ? 'active' : '' ?>">
-          <span class="nav-icon"><?= $icon ?></span>
-          <?= e($label) ?>
-        </a>
+        <?php if ($key === '__group'): ?>
+          <div class="admin-nav-section"><?= e($label) ?></div>
+        <?php else: ?>
+          <a href="<?= e($href) ?>" class="<?= $adminSection === $key ? 'active' : '' ?>">
+            <span class="nav-icon"><?= $icon ?></span>
+            <?= e($label) ?>
+          </a>
+        <?php endif; ?>
       <?php endforeach; ?>
     </nav>
 
