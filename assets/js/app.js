@@ -3,16 +3,18 @@ const CART_KEY='aapki_cart_v2';
 
 /* ============================================================
    SERVICEABILITY — API-free pincode gate
-   After 15s, ask the visitor for their pincode. If it is not an active
-   served pincode (or none entered), disable Add-to-Cart + Login and show
-   the "not serviceable" message. Browsing stays fully available.
+   On a guest's FIRST visit we ask for their pincode right away. If it is an
+   active served pincode we show Add-to-Cart; otherwise we hide Add-to-Cart
+   and show a friendly "we'll be there soon" message. The Login button is
+   ALWAYS visible. Logged-in members are never asked (they already ordered).
+   The pincode is remembered (cookie + localStorage) so returning guests are
+   not asked again. Browsing stays fully available in every case.
    ============================================================ */
 const AG_BASE=(window.AAPKI&&window.AAPKI.base)||'/aapkigrocery/';
 const SERVED=((window.AAPKI&&window.AAPKI.servedPincodes)||[]).map(String);
+const IS_MEMBER=!!(window.AAPKI&&window.AAPKI.isMember); // logged-in user → skip gate
 const PIN_KEY='aapki_pincode_v1'; // {pincode, served}
-const PIN_PROMPTED_KEY='aapki_pin_prompted_v1'; // '1' once the auto-prompt has been shown
-const PIN_COOKIE='aapki_pin'; // captured pincode persisted across visits
-const CHECK_COOKIE='aapki_geo_checked'; // '1' once geolocation has been attempted
+const PIN_COOKIE='aapki_pin'; // captured pincode persisted across visits (180d)
 var NOT_SERVED_MSG='We are currently working to extend our services to your region. '+
   'Please submit your inquiry via our <a href="'+AG_BASE+'contact-us/">Contact Us</a> page.';
 
@@ -24,7 +26,8 @@ function agPinGet(){try{return JSON.parse(localStorage.getItem(PIN_KEY)||'null')
 function agPinSet(o){try{localStorage.setItem(PIN_KEY,JSON.stringify(o));}catch(_){} if(o&&o.pincode){agSetCookie(PIN_COOKIE,o.pincode,180);}}
 function agIsServed(pin){pin=(''+(pin||'')).replace(/\D+/g,'');return pin!=='' && SERVED.indexOf(pin)!==-1;}
 
-/* Apply served / not-served state to the whole page. */
+/* Apply served / not-served state to the whole page.
+   Only Add-to-Cart is gated — Login / Register / account always stay active. */
 function agApplyServiceState(served){
   document.body.classList.toggle('ag-not-served', !served);
   document.body.classList.toggle('ag-served', !!served);
@@ -32,17 +35,6 @@ function agApplyServiceState(served){
     if(!served){ b.dataset.agBlocked='1'; b.setAttribute('aria-disabled','true'); b.classList.add('ag-disabled'); }
     else { delete b.dataset.agBlocked; b.removeAttribute('aria-disabled'); b.classList.remove('ag-disabled'); }
   });
-  document.querySelectorAll('#accountTrigger, a[href$="login.php"], a[href$="register.php"], [data-google-login]').forEach(function(a){
-    if(!served){ a.classList.add('ag-disabled'); a.setAttribute('aria-disabled','true'); }
-    else { a.classList.remove('ag-disabled'); a.removeAttribute('aria-disabled'); }
-  });
-  var ind=document.getElementById('agPinIndicator');
-  if(ind){
-    var p=agPinGet();
-    if(p&&p.pincode){ ind.innerHTML = '📍 '+(served?'Deliver to: <b>'+p.pincode+'</b>':'<b>'+p.pincode+'</b> · not serviceable'); }
-    else { ind.textContent = '📍 Set pincode'; }
-    ind.classList.toggle('pin-unserved', !served && !!(p&&p.pincode));
-  }
 }
 
 /* Pincode prompt modal. */
@@ -51,39 +43,17 @@ function agPinPrompt(opts){
   if(document.getElementById('agPinModal')) return;
   var wrap=document.createElement('div'); wrap.className='ag-modal'; wrap.id='agPinModal';
 
-  // Message-only mode: the visitor's captured geo pincode did not match any
-  // active service pincode — show just the "not serviceable" message.
-  if(opts.messageOnly){
-    wrap.innerHTML=
-      '<div class="ag-modal-card ag-pin-card">'+
-        '<div class="ag-pin-head"><b>Deliver to your area</b><button type="button" class="ag-pin-x" id="agPinX" aria-label="Close">×</button></div>'+
-        '<div class="ag-modal-body">'+
-          '<p class="ag-pin-msg"><span class="ag-pin-err">'+NOT_SERVED_MSG+'</span></p>'+
-          '<p class="ag-pin-count">Closing in <b>10</b>s…</p>'+
-          '<button type="button" class="ag-pin-skip" id="agPinClose">Close</button>'+
-        '</div>'+
-      '</div>';
-    document.body.appendChild(wrap);
-    var cntEl=wrap.querySelector('.ag-pin-count b'), left=10, timer=null, auto=null;
-    function close(){ try{clearInterval(timer);clearTimeout(auto);wrap.remove();}catch(_){} }
-    wrap.querySelector('#agPinClose').addEventListener('click',close);
-    wrap.querySelector('#agPinX').addEventListener('click',close);
-    timer=setInterval(function(){left--; if(cntEl)cntEl.textContent=left; if(left<=0)clearInterval(timer);},1000);
-    auto=setTimeout(close,10000); // auto-close after 10 seconds
-    return;
-  }
-
   wrap.innerHTML=
     '<div class="ag-modal-card ag-pin-card">'+
-      '<div class="ag-pin-head"><b>Deliver to your area</b><button type="button" class="ag-pin-x" id="agPinX" aria-label="Close">&times;</button></div>'+
+      '<div class="ag-pin-head"><b>Check delivery in your area</b><button type="button" class="ag-pin-x" id="agPinX" aria-label="Close">&times;</button></div>'+
       '<div class="ag-modal-body">'+
-        '<p>Enter your pincode to check if we deliver to you.</p>'+
+        '<p>Enter your 6-digit pincode and we\u2019ll check if we deliver to you.</p>'+
         '<form id="agPinForm" class="ag-pin-form">'+
           '<input id="agPinInput" inputmode="numeric" pattern="[1-9][0-9]{5}" maxlength="6" placeholder="6-digit pincode" required>'+
           '<button type="submit" class="btn btn-primary">Check</button>'+
         '</form>'+
         '<p class="ag-pin-msg" id="agPinMsg"></p>'+
-        '<button type="button" class="ag-pin-skip" id="agPinClose">Close</button>'+
+        '<button type="button" class="ag-pin-skip" id="agPinClose">Maybe later</button>'+
       '</div>'+
     '</div>';
   document.body.appendChild(wrap);
@@ -96,68 +66,61 @@ function agPinPrompt(opts){
     var pin=(input.value||'').replace(/\D+/g,'');
     if(!/^[1-9][0-9]{5}$/.test(pin)){ msg.innerHTML='<span class="ag-pin-err">Enter a valid 6-digit pincode.</span>'; return; }
     var served=agIsServed(pin);
-    agPinSet({pincode:pin,served:served}); // persists pincode cookie (180d)
-    try{ if(typeof agSetCookie==='function') agSetCookie(CHECK_COOKIE,'1',180); }catch(_){}
+    agPinSet({pincode:pin,served:served}); // remembers pincode (cookie 180d + localStorage)
     if(served){
-      msg.innerHTML='<span class="ag-pin-ok">✓ Great! We deliver to '+pin+'.</span>';
+      msg.innerHTML='<span class="ag-pin-ok">\u2713 Great! We deliver to '+pin+'. You can start shopping.</span>';
       agApplyServiceState(true);
+      acTimer=setTimeout(agCloseModal, 2500);
     } else {
       msg.innerHTML='<span class="ag-pin-err">'+NOT_SERVED_MSG+'</span>';
       agApplyServiceState(false);
+      // Keep the message on screen; the visitor can still browse and log in.
     }
-    // Auto-close the popup 5 seconds after the pincode is entered.
-    acTimer=setTimeout(agCloseModal, 5000);
   });
   wrap.querySelector('#agPinClose').addEventListener('click',agCloseModal);
   var xBtn=wrap.querySelector('#agPinX'); if(xBtn) xBtn.addEventListener('click',agCloseModal);
 }
 
-/* Clicking a disabled add-to-cart / login re-opens the pincode prompt. */
+/* Clicking a disabled Add-to-Cart re-opens the pincode prompt. */
 document.addEventListener('click',function(e){
-  if(!SERVED.length) return;
+  if(!SERVED.length || IS_MEMBER) return;
   var s=agPinGet(); if(s&&s.served) return;
-  var t=e.target.closest('.add-to-cart, #accountTrigger, a[href$="login.php"], a[href$="register.php"], [data-google-login]');
+  var t=e.target.closest('.add-to-cart');
   if(t && (t.classList.contains('ag-disabled')||t.getAttribute('aria-disabled')==='true')){
     e.preventDefault(); e.stopPropagation(); agPinPrompt();
   }
 }, true);
 
-/* Header pincode indicator → let the visitor change their pincode anytime. */
-document.addEventListener('click',function(e){
-  var ind=e.target.closest('#agPinIndicator');
-  if(ind){ e.preventDefault(); if(typeof agPinPrompt==='function') agPinPrompt(); }
-});
-
-/* Boot the serviceability gate — auto-detect location, show popup once. */
+/* Boot the serviceability gate. */
 (function agServiceBoot(){
   if(!SERVED.length){ agApplyServiceState(true); return; } // not configured → don't gate
 
-  // 1) Revisit: if we already captured a pincode (cookie), apply it.
+  // Logged-in members are trusted (they've ordered / have a delivery address):
+  // never ask them for a pincode and keep everything enabled.
+  if(IS_MEMBER){ agApplyServiceState(true); return; }
+
+  // 1) Returning guest: if we already captured a pincode, apply it silently.
   var cookiePin = agGetCookie(PIN_COOKIE);
   if(cookiePin){
     var served = agIsServed(cookiePin);
     agPinSet({pincode:cookiePin, served:served});
     agApplyServiceState(served);
-    if(served) return; // still serviceable → nothing more to do
-    // Stored pincode is NO LONGER in the active served list (admin changed
-    // service areas, or it was never served). Re-prompt so they can update it.
-    var path0=location.pathname||'';
-    if(/\/(login|register|cart)(\.php|\/)/i.test(path0) || /\/auth\//i.test(path0)) return;
-    setTimeout(function(){ if(typeof agPinPrompt==='function') agPinPrompt(); }, 800);
-    return;
+    return; // remembered → never nag the returning guest again
   }
 
-  // Default state until we know: not served (buttons gated).
+  // Default state until the guest tells us their pincode: not served (cart gated).
   agApplyServiceState(false);
 
-  // Don't interrupt on auth/cart pages.
+  // Don't interrupt the flow on auth / cart pages.
   var path=location.pathname||'';
   if(/\/(login|register|cart)(\.php|\/)/i.test(path) || /\/auth\//i.test(path)) return;
 
-  // 2) First visit: auto-detect the visitor's location once.
-  if(agGetCookie(CHECK_COOKIE)==='1') return; // already attempted this visit-cycle
-  if(typeof window.agRequestLocation==='function'){
-    setTimeout(function(){ window.agRequestLocation(); }, 800);
+  // 2) First-time guest: ask for the pincode right away so they immediately
+  // know whether we deliver to them (no 15s wait, no silent gating surprise).
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', agPinPrompt);
+  } else {
+    agPinPrompt();
   }
 })();
 
@@ -178,8 +141,8 @@ function agDoAdd(btn){const card=btn.closest('.product-card');const sel=card.que
 for(const btn of cartButtons){syncButton(btn);btn.addEventListener('click',()=>{
   if(btn.disabled)return;
   // Serviceability gate: block if a served-pincode list exists and the visitor
-  // isn't confirmed served. Prompt them for a pincode.
-  if(SERVED.length){
+  // isn't confirmed served. Prompt them for a pincode. Members bypass the gate.
+  if(SERVED.length && !IS_MEMBER){
     var s=agPinGet();
     if(!(s&&s.served)){ agPinPrompt(); return; }
   }
@@ -200,74 +163,3 @@ const accountTrigger=document.getElementById('accountTrigger'),accountDropdown=d
 
 
 // ── Hero Banner Slider — handled inline in index.php ─────────
-
-/* ============================================================
-   GEOLOCATION — ask the browser for the visitor's coordinates
-   and POST them to api/save-location.php (saved into the PHP session).
-   Requires HTTPS (or localhost); browsers block geolocation on plain HTTP.
-   Trigger: click any element with id/class "agGeoBtn".
-   ============================================================ */
-(function agGeo(){
-  var AG = window.AAPKI || {base:'/aapkigrocery/'};
-
-  function sendPositionToPHP(position){
-    var lat = position.coords.latitude;
-    var lng = position.coords.longitude;
-    var acc = position.coords.accuracy;
-    var body = 'latitude='+encodeURIComponent(lat)+
-               '&longitude='+encodeURIComponent(lng)+
-               '&accuracy='+encodeURIComponent(acc)+
-               '&csrf='+encodeURIComponent(AG.csrf||'');
-    fetch(AG.base+'api/save-location.php', {
-      method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded','X-CSRF-Token':AG.csrf||''},
-      body: body
-    })
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      // Mark that we've attempted a location check (so we don't re-ask repeatedly).
-      try{ if(typeof agSetCookie==='function') agSetCookie(CHECK_COOKIE,'1',180); }catch(_){}
-
-      // If a pincode was resolved, feed it into the serviceability gate and
-      // remember it in a cookie so revisits skip the check entirely.
-      if(d.ok && d.pincode && typeof agPinSet==='function' && typeof agApplyServiceState==='function'){
-        var served = (d.served === true) || (typeof agIsServed==='function' && agIsServed(d.pincode));
-        agPinSet({pincode:d.pincode, served:served}); // also writes the pincode cookie
-        agApplyServiceState(served);
-
-        // Not serviceable → show the message popup ONCE (Close + 10s auto-close).
-        if(!served && typeof agPinPrompt==='function'){
-          var alreadyShown=false; try{alreadyShown=localStorage.getItem(PIN_PROMPTED_KEY)==='1';}catch(_){}
-          if(!alreadyShown){
-            try{localStorage.setItem(PIN_PROMPTED_KEY,'1');}catch(_){}
-            var existing=document.getElementById('agPinModal');
-            if(existing){ try{existing.remove();}catch(_){} }
-            agPinPrompt({messageOnly:true});
-          }
-        }
-      }
-    })
-    .catch(function(err){ console.warn('save-location failed:', err); });
-  }
-
-  function handleError(error){
-    console.warn('Geolocation ERROR('+error.code+'): '+error.message);
-    // Location denied/unavailable/timeout → fall back to asking the visitor to
-    // TYPE their pincode, so serviceability can still be checked. Show once.
-    var alreadyShown=false; try{alreadyShown=localStorage.getItem(PIN_PROMPTED_KEY)==='1';}catch(_){}
-    if(!alreadyShown && typeof agPinPrompt==='function'){
-      try{localStorage.setItem(PIN_PROMPTED_KEY,'1');}catch(_){}
-      agPinPrompt(); // pincode-input mode
-    }
-  }
-
-  function requestLocation(){
-    if(!('geolocation' in navigator)){ handleError({code:2,message:'Geolocation unsupported'}); return; }
-    navigator.geolocation.getCurrentPosition(sendPositionToPHP, handleError, {
-      enableHighAccuracy:true, timeout:10000, maximumAge:0
-    });
-  }
-
-  // Expose for the boot logic (auto-trigger) and any programmatic use.
-  window.agRequestLocation = requestLocation;
-})();

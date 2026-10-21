@@ -134,7 +134,7 @@ $addresses=[];$userPoints=0;$userWallet=0.0;if(is_logged_in()){$st=$pdo->prepare
       <input type="hidden" name="cart_json" id="cartJson">
       <div class="address-options">
         <?php foreach($addresses as $a): ?>
-          <label class="address-choice"><input type="radio" name="address_id" value="<?=$a['id']?>" <?=$a['is_default']?'checked':''?>><span><b><?=e($a['address_type']??$a['label'])?></b> <?=($a['is_default']?'<small class="default-badge">Default</small>':'')?><br><?=e($a['apartment_no'])?> <?=e($a['apartment_name'])?>, <?=e($a['area'])?><br><?=e($a['address_line'])?>, <?=e($a['city'])?> - <?=e($a['pincode'])?><br>📞 <?=e($a['phone'])?><?=!empty($a['alt_phone'])?' · Alt: '.e($a['alt_phone']):''?></span></label>
+          <label class="address-choice"><input type="radio" name="address_id" value="<?=$a['id']?>" data-pincode="<?=e(preg_replace('/\D+/','',$a['pincode']))?>" <?=$a['is_default']?'checked':''?>><span><b><?=e($a['address_type']??$a['label'])?></b> <?=($a['is_default']?'<small class="default-badge">Default</small>':'')?><br><?=e($a['apartment_no'])?> <?=e($a['apartment_name'])?>, <?=e($a['area'])?><br><?=e($a['address_line'])?>, <?=e($a['city'])?> - <?=e($a['pincode'])?><br>📞 <?=e($a['phone'])?><?=!empty($a['alt_phone'])?' · Alt: '.e($a['alt_phone']):''?></span></label>
         <?php endforeach; ?>
       </div>
       <div class="field-grid compact"><label>Delivery slot<select name="delivery_slot"><option>Any available slot</option><option>7 AM - 10 AM</option><option>10 AM - 1 PM</option><option>5 PM - 8 PM</option><option>8 PM - 10 PM</option></select></label><label>Payment method<div class="payment-options"><label><input type="radio" name="payment_method" value="cod" checked> COD</label><label><input type="radio" name="payment_method" value="razorpay"> UPI / Online</label><label><input type="radio" name="payment_method" value="wallet"> 💰 Wallet (₹<?=number_format($userWallet,2)?>)</label></div></label></div>
@@ -196,11 +196,13 @@ $addresses=[];$userPoints=0;$userWallet=0.0;if(is_logged_in()){$st=$pdo->prepare
         if(add){add.setAttribute('open','');add.scrollIntoView({behavior:'smooth',block:'center'});}
         return;
       }
-      // Serviceability: if the saved pincode is not an active served area,
-      // clear the cart and redirect home (auto-close popup).
+      // Serviceability: validate the SELECTED delivery address's pincode against
+      // the active served list. This is accurate for both members and guests
+      // (we check where the order will actually be delivered). If it's not a
+      // served area, clear the cart and redirect home (auto-close popup).
       if(SERVED.length){
-        var g=null; try{g=JSON.parse(localStorage.getItem('aapki_pincode_v1')||'null');}catch(_){}
-        if(!g || !g.served){
+        var selPin=((selected && selected.getAttribute('data-pincode'))||'').replace(/\D+/g,'');
+        if(!selPin || SERVED.indexOf(selPin)===-1){
           e.preventDefault();
           agCheckoutPopup('We are currently working to extend our services to your region. Please submit your inquiry via our Contact Us page. Your cart will be cleared and you will be redirected to the home page.');
           return;

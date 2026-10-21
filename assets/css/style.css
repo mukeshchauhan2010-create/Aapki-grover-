@@ -1114,9 +1114,6 @@ img,svg,video{max-width:100%;height:auto}
 .ag-disabled{opacity:.5!important;pointer-events:none!important;cursor:not-allowed!important;filter:grayscale(.3)}
 body.ag-not-served .add-to-cart.ag-disabled::after{content:" (not in your area)";font-weight:400;font-size:11px}
 
-/* Optional header pincode indicator (shown only if the element exists) */
-#agPinIndicator{cursor:pointer;font-weight:700;color:var(--green,#12652f);font-size:13px}
-
 /* ============================================================
    REFER & EARN — account menu item + page
    ============================================================ */
@@ -1150,22 +1147,9 @@ body.ag-not-served .add-to-cart.ag-disabled::after{content:" (not in your area)"
 .ag-pin-count b{color:var(--green,#12652f)}
 
 /* ============================================================
-   HEADER PINCODE INDICATOR (click to set/change delivery pincode)
-   ============================================================ */
-.pin-indicator{display:inline-flex;align-items:center;gap:4px;background:#f0f5ee;border:1px solid var(--line,#dce5da);
-  color:var(--green,#12652f);font-weight:700;font-size:13px;padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
-.pin-indicator:hover{background:#e6f1e2}
-.pin-indicator b{font-weight:800}
-.pin-indicator.pin-unserved{background:#fff3dc;border-color:#f0c870;color:#8a5a00}
-@media(max-width:600px){
-  .pin-indicator{font-size:11px;padding:6px 9px}
-  .pin-indicator b{font-size:11px}
-}
-
-/* ============================================================
    HEADER LAYOUT FIX (overrides earlier conflicting nav rules)
    Row 1: brand (left) + actions (right). Search: inline on desktop,
-   full-width second row on tablet/mobile. Keeps the pincode pill tidy.
+   full-width second row on tablet/mobile.
    ============================================================ */
 .site-header .nav.container{display:flex !important;align-items:center !important;gap:16px !important;flex-wrap:wrap !important;text-align:left !important;justify-content:flex-start !important}
 .site-header .nav .brand{flex:0 0 auto !important;min-width:0 !important}
@@ -1186,13 +1170,7 @@ body.ag-not-served .add-to-cart.ag-disabled::after{content:" (not in your area)"
   .site-header .nav.container{gap:10px 12px !important;padding:10px 0 !important}
   .site-header .nav .nav-actions{gap:10px !important;flex-wrap:wrap !important;justify-content:flex-end !important}
   .site-header .nav .brand img{width:150px !important;height:auto !important}
-  .pin-indicator{font-size:11px;padding:6px 10px}
   .account-trigger{padding:4px}
-}
-
-/* Very small phones: pincode pill can take its own line under the logo */
-@media(max-width:380px){
-  .site-header .nav .pin-indicator{order:5 !important;flex-basis:100% !important;justify-content:center !important}
 }
 
 /* Single-variant products: show the pack label as plain text (no dropdown) */
