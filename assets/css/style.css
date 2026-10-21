@@ -1201,24 +1201,37 @@ body.ag-not-served .add-to-cart.ag-disabled::after{content:" (not in your area)"
 .admin-has-sub{position:relative}
 .admin-sub-trigger{display:flex;align-items:center;gap:10px;position:relative}
 .admin-sub-trigger .sub-caret{margin-left:auto;font-size:11px;opacity:.7;transition:transform .15s}
-.admin-has-sub:hover .admin-sub-trigger .sub-caret{transform:rotate(90deg)}
 
-/* The submenu: hidden by default; shows on hover (flyout) or when a child is active (open) */
-.admin-submenu{display:none;flex-direction:column}
+/* Submenu children styling (shared) */
 .admin-submenu a{display:flex;align-items:center;gap:10px;padding:10px 12px 10px 34px;color:#cdd8ce;font-size:13.5px;border-radius:8px}
 .admin-submenu a .nav-icon{font-size:15px;width:20px;text-align:center}
 .admin-submenu a:hover{background:rgba(255,255,255,.07);color:#fff}
 .admin-submenu a.active{background:rgba(255,255,255,.13);color:#fff}
 
-/* Open as an accordion when the current page is one of its children */
-.admin-has-sub.open .admin-submenu{display:flex}
-
-/* Flyout on hover (desktop): float to the right of the sidebar */
+/* ── DESKTOP (hover-capable, wide): pure flyout — never in document flow,
+      so it NEVER pushes the items below it (no vibration/jumping). ── */
 @media(hover:hover) and (min-width:951px){
-  .admin-has-sub:hover .admin-submenu{
-    display:flex;position:absolute;left:100%;top:0;min-width:210px;z-index:120;
+  .admin-submenu{
+    display:flex;flex-direction:column;
+    position:absolute;left:100%;top:0;min-width:210px;z-index:200;
     background:#143a22;border:1px solid rgba(255,255,255,.12);border-radius:10px;
-    box-shadow:0 18px 44px rgba(0,0,0,.35);padding:8px;margin-left:4px;
+    box-shadow:0 18px 44px rgba(0,0,0,.35);padding:8px;
+    /* No gap: start exactly at the sidebar edge so there is no dead zone. */
+    visibility:hidden;opacity:0;transform:translateX(-6px);transition:opacity .12s,transform .12s,visibility .12s;
+    pointer-events:none;
   }
-  .admin-has-sub:hover.open .admin-submenu{position:absolute} /* flyout wins over accordion on hover */
+  /* A transparent bridge removes any pixel gap between trigger and flyout. */
+  .admin-submenu::before{content:"";position:absolute;left:-10px;top:0;width:10px;height:100%}
+  .admin-has-sub:hover .admin-submenu,
+  .admin-has-sub:focus-within .admin-submenu{
+    visibility:visible;opacity:1;transform:translateX(0);pointer-events:auto;
+  }
+  .admin-has-sub:hover .admin-sub-trigger .sub-caret{transform:rotate(90deg)}
+}
+
+/* ── TOUCH / NARROW: accordion — expand in place only when a child is active.
+      Never shown on hover (no hover on touch), so nothing jumps. ── */
+@media(hover:none), (max-width:950px){
+  .admin-submenu{display:none;flex-direction:column}
+  .admin-has-sub.open .admin-submenu{display:flex}
 }
