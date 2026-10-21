@@ -34,7 +34,8 @@ $_navItems = [
     ['orders',    '📦', 'Orders',     url('admin/orders.php'),       'orders'],
 
     ['__group', '', 'Product Manager', '', 'catalog'],
-    ['products',  '🥬', 'Products',   url('admin/products.php'),     'catalog'],
+    ['product-add', '➕', 'Add Product',  url('admin/product-add.php'), 'catalog'],
+    ['products',    '🥬', 'List Product', url('admin/products.php'),    'catalog'],
     ['categories','🗂️',  'Categories', url('admin/categories.php'),  'catalog'],
     ['import',    '⬆️', 'Import',     url('admin/import.php'),       'catalog'],
     ['inventory', '📊', 'Inventory',  url('admin/inventory.php'),    'catalog'],
