@@ -33,9 +33,12 @@ $_navItems = [
     ['dashboard', '🏠', 'Dashboard',  url('admin/'),                 null],
     ['orders',    '📦', 'Orders',     url('admin/orders.php'),       'orders'],
 
-    ['__group', '', 'Product Manager', '', 'catalog'],
-    ['product-add', '➕', 'Add Product',  url('admin/product-add.php'), 'catalog'],
-    ['products',    '🥬', 'List Product', url('admin/products.php'),    'catalog'],
+    // Primary item with a hover flyout submenu (children: section-keys this item is "active" for).
+    ['__menu', '🥬', 'Product Manager', '', 'catalog', [
+        ['product-add', '➕', 'Add Product',     url('admin/product-add.php')],
+        ['products',    '📋', 'List Product',    url('admin/products.php')],
+        ['products-archived', '🗄️', 'Archived Product', url('admin/products-archived.php')],
+    ]],
     ['categories','🗂️',  'Categories', url('admin/categories.php'),  'catalog'],
     ['import',    '⬆️', 'Import',     url('admin/import.php'),       'catalog'],
     ['inventory', '📊', 'Inventory',  url('admin/inventory.php'),    'catalog'],
@@ -90,10 +93,26 @@ $_flash = get_flash();
 
     <nav class="admin-nav">
       <div class="admin-nav-section">Main</div>
-      <?php foreach ($_navItems as [$key, $icon, $label, $href, $perm]): ?>
-        <?php if ($perm && !user_can($pdo, $perm)) continue; ?>
+      <?php foreach ($_navItems as $_item):
+        $key=$_item[0]; $icon=$_item[1]; $label=$_item[2]; $href=$_item[3]??''; $perm=$_item[4]??null; $children=$_item[5]??null;
+        if ($perm && !user_can($pdo, $perm)) continue;
+      ?>
         <?php if ($key === '__group'): ?>
           <div class="admin-nav-section"><?= e($label) ?></div>
+        <?php elseif ($key === '__menu'): ?>
+          <?php $openChild = false; foreach (($children??[]) as $ch) { if ($adminSection === $ch[0]) { $openChild = true; break; } } ?>
+          <div class="admin-has-sub <?= $openChild ? 'open' : '' ?>">
+            <a href="<?= e($children[0][3] ?? '#') ?>" class="admin-sub-trigger <?= $openChild ? 'active' : '' ?>">
+              <span class="nav-icon"><?= $icon ?></span><?= e($label) ?><span class="sub-caret">▸</span>
+            </a>
+            <div class="admin-submenu">
+              <?php foreach (($children??[]) as $ch): ?>
+                <a href="<?= e($ch[3]) ?>" class="<?= $adminSection === $ch[0] ? 'active' : '' ?>">
+                  <span class="nav-icon"><?= $ch[1] ?></span><?= e($ch[2]) ?>
+                </a>
+              <?php endforeach; ?>
+            </div>
+          </div>
         <?php else: ?>
           <a href="<?= e($href) ?>" class="<?= $adminSection === $key ? 'active' : '' ?>">
             <span class="nav-icon"><?= $icon ?></span>
