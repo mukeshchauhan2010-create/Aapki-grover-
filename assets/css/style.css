@@ -610,11 +610,14 @@ body.admin-body main { display: block; }
   position: relative;
   overflow: hidden;
   background: #1a3c23;
-  width: 100%;
-  height: 480px;
+  width: min(1180px, 92%);
+  margin: 0 auto;
+  border-radius: 18px;
+  /* Height follows the banner artwork's own 3:1 ratio so nothing is cropped */
+  aspect-ratio: 1440 / 480;
 }
-@media(max-width:950px){ .hero-slider{ height: 360px; } }
-@media(max-width:600px){ .hero-slider{ height: 240px; } }
+/* Fallback for very old browsers without aspect-ratio support */
+@supports not (aspect-ratio: 1 / 1){ .hero-slider{ height: 393px; } }
 
 /* Track that holds all slides side by side */
 .hero-track {
@@ -635,7 +638,7 @@ body.admin-body main { display: block; }
 .hero-slide img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   display: block;
   user-select: none;
