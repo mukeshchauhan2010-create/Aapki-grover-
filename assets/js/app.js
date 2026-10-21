@@ -43,17 +43,19 @@ function agPinPrompt(opts){
   if(document.getElementById('agPinModal')) return;
   var wrap=document.createElement('div'); wrap.className='ag-modal'; wrap.id='agPinModal';
 
+  // MANDATORY gate: no close (✕) button and no "Maybe later" link. A guest
+  // must enter a pincode we actually serve before they can continue. The modal
+  // closes ONLY after a valid, served pincode is entered.
   wrap.innerHTML=
     '<div class="ag-modal-card ag-pin-card">'+
-      '<div class="ag-pin-head"><b>Check delivery in your area</b><button type="button" class="ag-pin-x" id="agPinX" aria-label="Close">&times;</button></div>'+
+      '<div class="ag-pin-head"><b>Check delivery in your area</b></div>'+
       '<div class="ag-modal-body">'+
-        '<p>Enter your 6-digit pincode and we\u2019ll check if we deliver to you.</p>'+
+        '<p>Please enter your 6-digit pincode to check if we deliver to you.</p>'+
         '<form id="agPinForm" class="ag-pin-form">'+
           '<input id="agPinInput" inputmode="numeric" pattern="[1-9][0-9]{5}" maxlength="6" placeholder="6-digit pincode" required>'+
           '<button type="submit" class="btn btn-primary">Check</button>'+
         '</form>'+
         '<p class="ag-pin-msg" id="agPinMsg"></p>'+
-        '<button type="button" class="ag-pin-skip" id="agPinClose">Maybe later</button>'+
       '</div>'+
     '</div>';
   document.body.appendChild(wrap);
@@ -70,15 +72,14 @@ function agPinPrompt(opts){
     if(served){
       msg.innerHTML='<span class="ag-pin-ok">\u2713 Great! We deliver to '+pin+'. You can start shopping.</span>';
       agApplyServiceState(true);
-      acTimer=setTimeout(agCloseModal, 2500);
+      acTimer=setTimeout(agCloseModal, 1500); // close shortly after success
     } else {
+      // Not served: keep the modal OPEN so they can try another pincode.
       msg.innerHTML='<span class="ag-pin-err">'+NOT_SERVED_MSG+'</span>';
       agApplyServiceState(false);
-      // Keep the message on screen; the visitor can still browse and log in.
+      try{input.value='';input.focus();}catch(_){}
     }
   });
-  wrap.querySelector('#agPinClose').addEventListener('click',agCloseModal);
-  var xBtn=wrap.querySelector('#agPinX'); if(xBtn) xBtn.addEventListener('click',agCloseModal);
 }
 
 /* Clicking a disabled Add-to-Cart re-opens the pincode prompt. */

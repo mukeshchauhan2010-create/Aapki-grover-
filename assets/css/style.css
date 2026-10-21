@@ -1108,11 +1108,8 @@ img,svg,video{max-width:100%;height:auto}
 .ag-pin-ok{color:#1a7a34;font-weight:700}
 .ag-pin-err{color:#c0392b;font-weight:600;line-height:1.5}
 .ag-pin-err a{color:#12652f;font-weight:800}
-.ag-pin-skip{margin-top:14px;background:none;border:0;color:#68746b;font-size:13px;cursor:pointer;text-decoration:underline}
-
-/* Disabled Add-to-Cart & Login when area not served */
+/* Disabled Add-to-Cart when area not served (no extra label text) */
 .ag-disabled{opacity:.5!important;pointer-events:none!important;cursor:not-allowed!important;filter:grayscale(.3)}
-body.ag-not-served .add-to-cart.ag-disabled::after{content:" (not in your area)";font-weight:400;font-size:11px}
 
 /* ============================================================
    REFER & EARN — account menu item + page
