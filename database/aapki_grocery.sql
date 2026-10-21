@@ -336,6 +336,54 @@ CREATE TABLE `payment_qr` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
+
+--
+-- Purchasing / daily inventory
+--
+
+CREATE TABLE `suppliers` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` varchar(160) NOT NULL,
+  `type` enum('farmer','vendor','market','other') NOT NULL DEFAULT 'vendor',
+  `phone` varchar(20) DEFAULT NULL,
+  `notes` varchar(500) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `purchases` (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `supplier_id` int(10) UNSIGNED DEFAULT NULL,
+  `purchase_date` date NOT NULL,
+  `invoice_no` varchar(80) DEFAULT NULL,
+  `notes` varchar(500) DEFAULT NULL,
+  `total_cost` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `created_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_pur_date` (`purchase_date`),
+  KEY `idx_pur_supplier` (`supplier_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `purchase_items` (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `purchase_id` bigint(20) UNSIGNED NOT NULL,
+  `product_id` bigint(20) UNSIGNED NOT NULL,
+  `product_name` varchar(180) NOT NULL,
+  `qty` decimal(12,3) NOT NULL,
+  `unit` varchar(12) NOT NULL DEFAULT 'kg',
+  `cost_price` decimal(10,2) NOT NULL,
+  `line_total` decimal(12,2) NOT NULL,
+  `purchase_date` date NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_pi_purchase` (`purchase_id`),
+  KEY `idx_pi_product` (`product_id`),
+  KEY `idx_pi_date` (`purchase_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT INTO `service_pincodes` (`pincode`, `label`, `is_active`) VALUES
 ('110084', 'Burari, Delhi', 1);
 
@@ -383,6 +431,7 @@ CREATE TABLE `products` (
   `image_alt` varchar(255) DEFAULT NULL,
   `mrp` decimal(10,2) DEFAULT 0.00,
   `price` decimal(10,2) DEFAULT 0.00,
+  `cost_price` decimal(10,2) NOT NULL DEFAULT 0.00,
   `stock` decimal(12,3) DEFAULT 0.000,
   `low_stock_threshold` decimal(12,3) NOT NULL DEFAULT 5.000,
   `is_featured` tinyint(1) DEFAULT 0,
