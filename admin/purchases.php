@@ -62,6 +62,16 @@ $suppliers = $pdo->query('SELECT id,name,type FROM suppliers WHERE is_active=1 O
 $products  = $pdo->query('SELECT id,name,cost_price FROM products WHERE is_active=1 ORDER BY name')->fetchAll();
 $recent    = $pdo->query('SELECT pu.*, s.name supplier_name FROM purchases pu LEFT JOIN suppliers s ON s.id=pu.supplier_id ORDER BY pu.id DESC LIMIT 30')->fetchAll();
 
+// Preload line items for the recent purchases (to show product details).
+$itemsByPurchase = [];
+if ($recent) {
+    $ids = array_column($recent, 'id');
+    $in  = implode(',', array_fill(0, count($ids), '?'));
+    $its = $pdo->prepare('SELECT * FROM purchase_items WHERE purchase_id IN('.$in.') ORDER BY id');
+    $its->execute($ids);
+    foreach ($its->fetchAll() as $it) { $itemsByPurchase[$it['purchase_id']][] = $it; }
+}
+
 $adminTitle='Purchases'; $adminSection='purchases'; $adminCrumbs=[['label'=>'Purchases']];
 include __DIR__.'/../includes/admin-header.php';
 ?>
@@ -117,11 +127,28 @@ include __DIR__.'/../includes/admin-header.php';
     <a class="ap-btn ap-btn-sm" href="<?=url('admin/inventory-report.php')?>">📊 Daily report</a></div>
   <div class="ap-card-body no-pad">
     <div class="ap-table-wrap"><table class="ap-table">
-      <thead><tr><th>Date</th><th>Supplier</th><th>Invoice</th><th>Total</th></tr></thead>
+      <thead><tr><th>Date</th><th>Supplier</th><th>Invoice</th><th>Products purchased</th><th>Total</th></tr></thead>
       <tbody>
-        <?php if(!$recent): ?><tr><td colspan="4"><span class="ap-hint" style="padding:12px;display:block">No purchases recorded yet.</span></td></tr><?php endif; ?>
-        <?php foreach($recent as $r): ?>
-          <tr><td><?= e($r['purchase_date']) ?></td><td><?= e($r['supplier_name'] ?? '—') ?></td><td><?= e($r['invoice_no'] ?? '—') ?></td><td><b>₹<?= number_format((float)$r['total_cost'],2) ?></b></td></tr>
+        <?php if(!$recent): ?><tr><td colspan="5"><span class="ap-hint" style="padding:12px;display:block">No purchases recorded yet.</span></td></tr><?php endif; ?>
+        <?php foreach($recent as $r): $items=$itemsByPurchase[$r['id']] ?? []; ?>
+          <tr>
+            <td><?= e($r['purchase_date']) ?></td>
+            <td><?= e($r['supplier_name'] ?? '—') ?></td>
+            <td><?= e($r['invoice_no'] ?? '—') ?></td>
+            <td>
+              <?php if($items): ?>
+                <div class="pur-items-list">
+                <?php foreach($items as $it): ?>
+                  <div class="pur-item-line">
+                    <span class="pur-item-name"><?= e($it['product_name']) ?></span>
+                    <span class="pur-item-meta"><?= rtrim(rtrim(number_format((float)$it['qty'],3),'0'),'.') ?> <?= e($it['unit']) ?> × ₹<?= number_format((float)$it['cost_price'],2) ?> = <b>₹<?= number_format((float)$it['line_total'],2) ?></b></span>
+                  </div>
+                <?php endforeach; ?>
+                </div>
+              <?php else: ?><span class="ap-hint">—</span><?php endif; ?>
+            </td>
+            <td><b>₹<?= number_format((float)$r['total_cost'],2) ?></b></td>
+          </tr>
         <?php endforeach; ?>
       </tbody>
     </table></div>

@@ -1218,3 +1218,9 @@ body.ag-not-served .add-to-cart.ag-disabled::after{content:" (not in your area)"
 .admin-submenu a .nav-icon{font-size:15px;width:18px;text-align:center}
 .admin-submenu a:hover{background:rgba(255,255,255,.08);color:#fff}
 .admin-submenu a.active{background:rgba(255,255,255,.14);color:#fff}
+
+/* Recent purchases — product details list */
+.pur-items-list{display:grid;gap:4px}
+.pur-item-line{display:flex;flex-direction:column;line-height:1.35}
+.pur-item-name{font-weight:700;font-size:13px}
+.pur-item-meta{font-size:11.5px;color:#68746b}
