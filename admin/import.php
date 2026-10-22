@@ -95,7 +95,7 @@ if (($stage==='preview'||$stage==='done') && is_file($tmpCsvPath)) {
             $finalImage = $image ?: ('uploads/products/'.$slug.'.webp');
             if ($imageUrl!=='') { $fetched=fetch_image($imageUrl,$slug,$GLOBALS['uploadDir'],$GLOBALS['publicDir']); if($fetched) $finalImage=$fetched; }
             $catId=(int)$cats[$catSlug]['id'];
-            $pdo->prepare('INSERT INTO products(category_id,name,slug,sku,description,search_terms,image,image_webp,mrp,price,stock,low_stock_threshold,is_featured,is_active) VALUES(?,?,?,?,?,?,?,?,?,?,?,5,0,1)')
+            $pdo->prepare('INSERT INTO products(category_id,name,slug,sku,description,search_terms,image,image_webp,mrp,price,stock,low_stock_threshold,is_featured,is_active,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,5,0,1,NOW(),NOW())')
                 ->execute([$catId,$name,$slug,$sku,trim($desc),trim($search),$finalImage,$finalImage,(float)$mrp,(float)$price,(float)$stock]);
             $pid=(int)$pdo->lastInsertId();
             // variants

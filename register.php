@@ -36,7 +36,7 @@ if($_SERVER['REQUEST_METHOD']==='POST' && verify_csrf($_POST['csrf']??null)){
             $code='AG'.strtoupper(bin2hex(random_bytes(4)));
             $hash=password_hash($pass,PASSWORD_DEFAULT);
             $name=trim($first.' '.$last);
-            $st=$pdo->prepare('INSERT INTO users(name,first_name,last_name,email,phone,password_hash,provider,role_slug,referral_code) VALUES(?,?,?,?,?,?, "local","customer",?)');
+            $st=$pdo->prepare('INSERT INTO users(name,first_name,last_name,email,phone,password_hash,provider,role_slug,referral_code,created_at,updated_at) VALUES(?,?,?,?,?,?, "local","customer",?,NOW(),NOW())');
             $st->execute([$name,$first,$last?:null,$email,$phone?:null,$hash,$code]);
             $uid=(int)$pdo->lastInsertId();
             session_regenerate_id(true);

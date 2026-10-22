@@ -9,7 +9,34 @@ if(!hash_equals($_SESSION['oauth_state']??'',$_GET['state']??'')){flash('error',
 $ch=curl_init('https://oauth2.googleapis.com/token');curl_setopt_array($ch,[CURLOPT_POST=>true,CURLOPT_RETURNTRANSFER=>true,CURLOPT_POSTFIELDS=>http_build_query(['code'=>$_GET['code']??'','client_id'=>GOOGLE_CLIENT_ID,'client_secret'=>GOOGLE_CLIENT_SECRET,'redirect_uri'=>$redirectUri,'grant_type'=>'authorization_code'])]);$token=json_decode(curl_exec($ch),true);curl_close($ch);if(empty($token['access_token'])){flash('error','Google login could not be completed.');redirect('login.php');}
 $ch=curl_init('https://openidconnect.googleapis.com/v1/userinfo');curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$token['access_token']]]);$info=json_decode(curl_exec($ch),true);curl_close($ch);if(empty($info['email'])){flash('error','Google did not return an email address.');redirect('login.php');}
 $picture=$info['picture']??null;
-$s=$pdo->prepare("SELECT * FROM users WHERE provider='google' AND provider_id=? LIMIT 1");$s->execute([$info['sub']]);$u=$s->fetch();if(!$u){$s=$pdo->prepare('SELECT * FROM users WHERE email=? LIMIT 1');$s->execute([$info['email']]);$u=$s->fetch();if($u){$st=$pdo->prepare("UPDATE users SET provider='google',provider_id=?,name=?,avatar=COALESCE(?,avatar) WHERE id=?");$st->execute([$info['sub'],$info['name']??$u['name'],$picture,$u['id']]);}else{$code='AG'.strtoupper(bin2hex(random_bytes(4)));$st=$pdo->prepare("INSERT INTO users(name,email,avatar,provider,provider_id,role_slug,referral_code) VALUES(?,?,?,'google',?, 'customer',?)");$st->execute([$info['name']??'Customer',$info['email'],$picture,$info['sub'],$code]);$u=['id'=>$pdo->lastInsertId(),'role_slug'=>'customer'];}}else{if($picture){$pdo->prepare('UPDATE users SET avatar=? WHERE id=?')->execute([$picture,$u['id']]);}}
+// Full name + split first/last. Google usually returns given_name/family_name;
+// fall back to splitting the display name if those are missing.
+$fullName=trim((string)($info['name']??''));
+$firstName=trim((string)($info['given_name']??''));
+$lastName=trim((string)($info['family_name']??''));
+if($firstName===''&&$fullName!==''){$parts=preg_split('/\s+/',$fullName,2);$firstName=$parts[0]??'';$lastName=$lastName!==''?$lastName:($parts[1]??'');}
+if($fullName===''){$fullName=trim($firstName.' '.$lastName);}
+if($fullName===''){$fullName='Customer';}
+$s=$pdo->prepare("SELECT * FROM users WHERE provider='google' AND provider_id=? LIMIT 1");$s->execute([$info['sub']]);$u=$s->fetch();
+if(!$u){
+  $s=$pdo->prepare('SELECT * FROM users WHERE email=? LIMIT 1');$s->execute([$info['email']]);$u=$s->fetch();
+  if($u){
+    // Existing account (e.g. signed up by email) — link Google + fill blank names.
+    $st=$pdo->prepare("UPDATE users SET provider='google',provider_id=?,name=?,first_name=COALESCE(NULLIF(first_name,''),?),last_name=COALESCE(NULLIF(last_name,''),?),avatar=COALESCE(?,avatar),updated_at=NOW() WHERE id=?");
+    $st->execute([$info['sub'],$info['name']??$u['name'],$firstName,$lastName,$picture,$u['id']]);
+  }else{
+    // Brand-new Google user — set name, first/last, and timestamps explicitly
+    // (NOW() avoids MySQL's "only one CURRENT_TIMESTAMP default" limitation).
+    $code='AG'.strtoupper(bin2hex(random_bytes(4)));
+    $st=$pdo->prepare("INSERT INTO users(name,first_name,last_name,email,avatar,provider,provider_id,role_slug,referral_code,created_at,updated_at) VALUES(?,?,?,?,?,'google',?,'customer',?,NOW(),NOW())");
+    $st->execute([$fullName,$firstName,$lastName,$info['email'],$picture,$info['sub'],$code]);
+    $u=['id'=>$pdo->lastInsertId(),'role_slug'=>'customer'];
+  }
+}else{
+  if($picture){$pdo->prepare('UPDATE users SET avatar=? WHERE id=?')->execute([$picture,$u['id']]);}
+  // Backfill first/last name if they were previously blank.
+  $pdo->prepare("UPDATE users SET first_name=COALESCE(NULLIF(first_name,''),?),last_name=COALESCE(NULLIF(last_name,''),?) WHERE id=?")->execute([$firstName,$lastName,$u['id']]);
+}
 session_regenerate_id(true);$_SESSION['user_id']=(int)$u['id'];$_SESSION['role']=$u['role_slug'];$raw=bin2hex(random_bytes(32));$st=$pdo->prepare('UPDATE users SET remember_token_hash=? WHERE id=?');$st->execute([hash('sha256',$raw),(int)$u['id']]);setcookie('aapki_remember',$raw,['expires'=>time()+31536000,'path'=>BASE_URL,'secure'=>!empty($_SERVER['HTTPS']),'httponly'=>true,'samesite'=>'Lax']);
 $ret=safe_return($_SESSION['oauth_return']??'');unset($_SESSION['oauth_return']);
 $isPopup=!empty($_SESSION['oauth_popup']);unset($_SESSION['oauth_popup']);

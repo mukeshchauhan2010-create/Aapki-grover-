@@ -106,8 +106,8 @@ if (!$dryRun || isset($_POST['preview'])) {
             $pdo->prepare(
                 'INSERT INTO products
                  (category_id,name,slug,sku,description,search_terms,image,image_webp,
-                  mrp,price,stock,low_stock_threshold,is_featured,is_active)
-                 VALUES(?,?,?,?,?,?,?,?,?,?,?,5,0,1)'
+                  mrp,price,stock,low_stock_threshold,is_featured,is_active,created_at,updated_at)
+                 VALUES(?,?,?,?,?,?,?,?,?,?,?,5,0,1,NOW(),NOW())'
             )->execute([
                 $catId, $name, $slug, $sku,
                 trim($desc), trim($search),

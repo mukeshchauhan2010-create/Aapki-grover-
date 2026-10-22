@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['csrf'] ?? null)
             $pdo->prepare(
                 'INSERT INTO products(category_id,name,slug,sku,description,search_terms,image,image_webp,
                  image_alt,mrp,price,stock,low_stock_threshold,is_featured,is_active,meta_title,
-                 meta_description,meta_keywords) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                 meta_description,meta_keywords,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())'
             )->execute($fields);
             $pid = (int)$pdo->lastInsertId();
         }
