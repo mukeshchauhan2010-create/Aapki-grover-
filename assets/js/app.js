@@ -127,7 +127,42 @@ document.addEventListener('click',function(e){
 
 const getCart=()=>{try{return JSON.parse(localStorage.getItem(CART_KEY)||'[]')}catch{return[]}};
 const saveCart=c=>localStorage.setItem(CART_KEY,JSON.stringify(c));
-function updateCartCount(){const n=getCart().reduce((s,i)=>s+i.qty,0);document.querySelectorAll('#cartCount').forEach(x=>x.textContent=n?`(${n})`:'');const link=document.getElementById('cartLink');if(link){link.classList.toggle('disabled-cart',n===0);link.setAttribute('aria-disabled',n===0?'true':'false');if(n===0)link.dataset.href=link.href;}}
+function updateCartCount(){const n=getCart().reduce((s,i)=>s+i.qty,0);document.querySelectorAll('#cartCount').forEach(x=>x.textContent=n?`(${n})`:'');const link=document.getElementById('cartLink');if(link){link.classList.toggle('disabled-cart',n===0);link.setAttribute('aria-disabled',n===0?'true':'false');if(n===0)link.dataset.href=link.href;}agUpdateFloatingCart(n);}
+
+/* ============================================================
+   FLOATING CART BAR — appears once the cart has ≥1 item.
+   Desktop: round icon button, fixed bottom-right.
+   Mobile:  full-width strip, fixed at the bottom.
+   Stays fixed while scrolling; hidden on the cart page itself.
+   ============================================================ */
+var agFloatingCartEl=null;
+function agOnCartPage(){ return /\/cart(\.php|\/)?($|[?#])/i.test(location.pathname+location.search) || !!document.getElementById('cartItems'); }
+function agBuildFloatingCart(){
+  if(agFloatingCartEl || agOnCartPage()) return;
+  var base=(window.AAPKI&&window.AAPKI.base)||'/aapkigrocery/';
+  var a=document.createElement('a');
+  a.id='agFloatingCart';
+  a.className='ag-floating-cart';
+  a.href=base+'cart/';
+  a.setAttribute('aria-label','View cart');
+  a.innerHTML=
+    '<span class="agfc-icon" aria-hidden="true">🛒<b class="agfc-badge" id="agfcBadge">0</b></span>'+
+    '<span class="agfc-text"><span class="agfc-count" id="agfcCount">0 items</span><span class="agfc-cta">View cart →</span></span>';
+  document.body.appendChild(a);
+  agFloatingCartEl=a;
+}
+function agUpdateFloatingCart(n){
+  if(agOnCartPage()) return;            // never show on the cart page
+  if(n>0 && !agFloatingCartEl) agBuildFloatingCart();
+  if(!agFloatingCartEl) return;
+  var show=n>0;
+  agFloatingCartEl.classList.toggle('show', show);
+  document.body.classList.toggle('ag-has-floating-cart', show);
+  if(show){
+    var badge=document.getElementById('agfcBadge'); if(badge) badge.textContent=n;
+    var cnt=document.getElementById('agfcCount'); if(cnt) cnt.textContent=n+(n===1?' item':' items');
+  }
+}
 updateCartCount();
 // Product variants
 for(const sel of document.querySelectorAll('.variant-select')) sel.addEventListener('change',()=>{const o=sel.selectedOptions[0],card=sel.closest('.product-card');card.querySelector('.variant-price').textContent='₹'+Number(o.dataset.price).toFixed(2);card.querySelector('.variant-mrp').textContent=Number(o.dataset.mrp)>Number(o.dataset.price)?'₹'+Number(o.dataset.mrp).toFixed(2):''});
