@@ -45,7 +45,10 @@ include __DIR__.'/../includes/admin-header.php';
 <div class="ap-card">
   <div class="ap-card-header">
     <h2 class="ap-card-title">Users &amp; roles</h2>
-    <span style="font-size:13px;color:#7a8a7b;"><?= count($users) ?> shown (latest 300)</span>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span style="font-size:13px;color:#7a8a7b;"><?= count($users) ?> shown (latest 300)</span>
+      <a class="ap-btn ap-btn-sm ap-btn-primary" href="<?= url('admin/user-add.php') ?>">+ Add New User</a>
+    </div>
   </div>
   <div class="ap-card-body no-pad">
     <div class="ap-table-wrap">

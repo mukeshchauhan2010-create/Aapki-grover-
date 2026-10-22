@@ -166,7 +166,10 @@ function payment_badge(string $s): string {
 <div class="ap-card">
   <div class="ap-card-header">
     <h2 class="ap-card-title"><?= $hasFilter ? 'Filtered orders' : 'All orders' ?></h2>
-    <span style="font-size:13px;color:#7a8a7b;"><?= number_format($totalOrders) ?> total · page <?= $page ?> of <?= $totalPages ?></span>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span style="font-size:13px;color:#7a8a7b;"><?= number_format($totalOrders) ?> total · page <?= $page ?> of <?= $totalPages ?></span>
+      <a class="ap-btn ap-btn-sm ap-btn-primary" href="<?= url('admin/order-add.php') ?>">+ Create Order</a>
+    </div>
   </div>
   <div class="ap-card-body no-pad">
     <div class="ap-table-wrap">
