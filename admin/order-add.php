@@ -241,7 +241,8 @@ include __DIR__.'/../includes/admin-header.php';
         <div class="ap-field">
           <label class="ap-label">Delivery slot</label>
           <select class="ap-select" name="delivery_slot">
-            <option>Any available slot</option><option>7 AM - 10 AM</option><option>10 AM - 1 PM</option><option>5 PM - 8 PM</option><option>8 PM - 10 PM</option>
+            <option>Any available slot</option>
+            <?php foreach (delivery_slots($pdo) as $slot): ?><option><?= e($slot) ?></option><?php endforeach; ?>
           </select>
         </div>
         <div class="ap-field">

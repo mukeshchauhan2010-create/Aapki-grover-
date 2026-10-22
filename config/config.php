@@ -42,6 +42,20 @@ function setting_bool(PDO $pdo,string $key,bool $default=false):bool{return sett
 function user_can(PDO $pdo,string $permission):bool{if(empty($_SESSION['role']))return false;$role=$_SESSION['role'];$s=$pdo->prepare('SELECT can_manage_users,can_manage_catalog,can_manage_orders,can_manage_settings,can_manage_content FROM roles WHERE slug=?');$s->execute([$role]);$r=$s->fetch();if(!$r)return false;switch($permission){case 'users': return (bool)$r['can_manage_users']; case 'catalog': return (bool)$r['can_manage_catalog']; case 'orders': return (bool)$r['can_manage_orders']; case 'settings': return (bool)$r['can_manage_settings']; case 'content': return (bool)$r['can_manage_content']; default: return false;}}
 
 function cart_is_live(PDO $pdo): bool { return setting($pdo,'cart_mode','live')==='live'; }
+/**
+ * Delivery slots shown on checkout / admin create-order.
+ * Admin-managed via Settings (keys slot_1..slot_6). Falls back to sensible
+ * defaults until the admin saves custom slots. Empty slots are skipped.
+ */
+function delivery_slots(PDO $pdo): array {
+    $defaults = ['7 AM - 10 AM','10 AM - 1 PM','5 PM - 8 PM','8 PM - 10 PM','',''];
+    $slots = [];
+    for ($i = 1; $i <= 6; $i++) {
+        $v = trim(setting($pdo, 'slot_'.$i, $defaults[$i-1]));
+        if ($v !== '') $slots[] = $v;
+    }
+    return $slots;
+}
 function upload_public_path(string $relative): string { return url(ltrim($relative,'/')); }
 function product_image(array $p): string { return asset_url($p['image_webp'] ?? $p['image'] ?? null); }
 if(!defined('RAZORPAY_KEY_ID'))        define('RAZORPAY_KEY_ID','');

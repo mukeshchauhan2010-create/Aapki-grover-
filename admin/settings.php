@@ -10,6 +10,7 @@ $keys = [
     'razorpay_enabled','razorpay_key_id','razorpay_key_secret','razorpay_webhook_secret',
     'ticker_enabled','ticker_1','ticker_2','ticker_3','ticker_4','ticker_5',
     'process_enabled','process_1','process_2','process_3','process_4','process_5',
+    'slot_1','slot_2','slot_3','slot_4','slot_5','slot_6',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['csrf'] ?? null)) {
@@ -187,6 +188,33 @@ $processDefaults = [
       <?php endfor; ?>
     </div>
     <span class="ap-hint">Empty steps are skipped. You can use emoji. Up to 5 steps; the strip shows only when enabled and at least one step has text.</span>
+  </div>
+</div>
+
+<!-- ── Delivery slots ────────────────────────────────────────── -->
+<?php
+// Defaults so the checkout keeps its current slots until edited.
+$slotDefaults = [
+  1 => '7 AM - 10 AM',
+  2 => '10 AM - 1 PM',
+  3 => '5 PM - 8 PM',
+  4 => '8 PM - 10 PM',
+  5 => '',
+  6 => '',
+];
+?>
+<div class="ap-card">
+  <div class="ap-card-header"><h2 class="ap-card-title">🕒 Delivery slots</h2></div>
+  <div class="ap-card-body">
+    <div class="ap-form-grid-3">
+      <?php for($i=1;$i<=6;$i++): ?>
+      <div class="ap-field">
+        <label class="ap-label">Slot <?= $i ?></label>
+        <input class="ap-input" name="slot_<?= $i ?>" value="<?= e(setting($pdo,'slot_'.$i,$slotDefaults[$i])) ?>" placeholder="e.g. 10 AM - 1 PM">
+      </div>
+      <?php endfor; ?>
+    </div>
+    <span class="ap-hint">These appear in the "Delivery slot" dropdown on checkout and in admin Create Order. Empty slots are skipped. An "Any available slot" option is always offered first.</span>
   </div>
 </div>
 
