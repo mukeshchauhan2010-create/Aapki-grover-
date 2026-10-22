@@ -51,7 +51,7 @@ if($_SERVER['REQUEST_METHOD']==='POST' && !isset($_POST['add_address']) && verif
     $earn=setting_bool($pdo,'points_enabled')?(int)floor($subtotal/100*(float)setting($pdo,'points_per_100','1')):0;
     // Wallet payment: ensure sufficient balance AND the order meets the minimum.
     $payStatus='pending';
-    if($payment==='wallet'){$wbal=wallet_balance($pdo,(int)user_id());if($total < 300)throw new RuntimeException('Wallet can be used only on orders of ₹300 or more.');if($wbal + 0.0001 < $total)throw new RuntimeException('Insufficient wallet balance. Available ₹'.number_format($wbal,2).', order total ₹'.number_format($total,2).'.');$payStatus='paid';}
+    if($payment==='wallet'){$wbal=wallet_balance($pdo,(int)user_id());if($subtotal < 300)throw new RuntimeException('Wallet can be used only when the cart subtotal is ₹300 or more.');if($wbal + 0.0001 < $total)throw new RuntimeException('Insufficient wallet balance. Available ₹'.number_format($wbal,2).', order total ₹'.number_format($total,2).'.');$payStatus='paid';}
     $os=$pdo->prepare('INSERT INTO orders(order_no,user_id,address_id,subtotal,handling_charge,delivery_fee,discount,points_used,points_earned,coupon_code,total,payment_method,payment_status,status,delivery_slot,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())');$os->execute([$orderNo,user_id(),$address,$subtotal,$handling,$delivery,$discount,$pointsUsed,$earn,$coupon?:null,$total,$payment,$payStatus,'placed',trim($_POST['delivery_slot']??'Any available slot')]);$oid=(int)$pdo->lastInsertId();
     if($payment==='wallet'){wallet_debit($pdo,(int)user_id(),$total,'Order payment '.$orderNo,$oid,true);}$is=$pdo->prepare('INSERT INTO order_items(order_id,product_id,variant_id,product_name,variant_label,qty,unit_price,line_total) VALUES(?,?,?,?,?,?,?,?)');$ss=$pdo->prepare('UPDATE product_variants SET stock=stock-? WHERE id=? AND stock>=?');foreach($valid as $x){$v=$x['v'];$q=$x['qty'];$ss->execute([$q,$v['id'],$q]);if($ss->rowCount()!==1)throw new RuntimeException('Inventory changed. Please retry.');$is->execute([$oid,$v['product_id'],$v['id'],$v['name'],$v['label'],$q,$v['price'],$q*$v['price']]);}$pdo->prepare('UPDATE coupons SET used_count=used_count+1 WHERE code=? AND ?<>""')->execute([$coupon,$coupon]);if($pointsUsed){$pdo->prepare('UPDATE users SET points=points-? WHERE id=?')->execute([$pointsUsed,user_id()]);$pdo->prepare('INSERT INTO point_transactions(user_id,points,reason,order_id) VALUES(?,?,?,?)')->execute([user_id(),-$pointsUsed,'Points redeemed',$oid]);}if($earn){$pdo->prepare('UPDATE users SET points=points+? WHERE id=?')->execute([$earn,user_id()]);$pdo->prepare('INSERT INTO point_transactions(user_id,points,reason,order_id) VALUES(?,?,?,?)')->execute([user_id(),$earn,'Order points',$oid]);}$pdo->commit();
 
@@ -139,7 +139,7 @@ if (is_logged_in()) {
 // at least this much; allow using it only when the cart total reaches the
 // minimum below.
 $WALLET_SHOW_MIN = 100.0;   // show Wallet option when balance >= ₹100
-$WALLET_MIN_ORDER = 300.0;  // Wallet usable only on orders >= ₹300
+$WALLET_MIN_ORDER = 300.0;  // Wallet usable only when cart SUBTOTAL >= ₹300
 $walletEligible = ($userWallet >= $WALLET_SHOW_MIN);
 ?>
 <section class="container page"><div class="section-head"><div><span class="eyebrow">YOUR BASKET</span><h1>Cart & checkout</h1><p class="hint">Review your basket, choose delivery and go directly to payment.</p></div><a class="btn" href="<?=url()?>">Continue shopping</a></div>
@@ -158,7 +158,7 @@ $walletEligible = ($userWallet >= $WALLET_SHOW_MIN);
           <label class="address-choice"><input type="radio" name="address_id" value="<?=$a['id']?>" data-pincode="<?=e(preg_replace('/\D+/','',$a['pincode']))?>" <?=$a['is_default']?'checked':''?>><span><b><?=e($a['address_type']??$a['label'])?></b> <?=($a['is_default']?'<small class="default-badge">Default</small>':'')?><br><?=e($a['apartment_no'])?> <?=e($a['apartment_name'])?>, <?=e($a['area'])?><br><?=e($a['address_line'])?>, <?=e($a['city'])?> - <?=e($a['pincode'])?><br>📞 <?=e($a['phone'])?><?=!empty($a['alt_phone'])?' · Alt: '.e($a['alt_phone']):''?></span></label>
         <?php endforeach; ?>
       </div>
-      <div class="field-grid compact"><label>Delivery slot<select name="delivery_slot"><option>Any available slot</option><?php foreach(delivery_slots($pdo) as $slot): ?><option><?=e($slot)?></option><?php endforeach; ?></select></label><label>Payment method<div class="payment-options"><label><input type="radio" name="payment_method" value="cod" checked> COD</label><label><input type="radio" name="payment_method" value="razorpay"> UPI / Online</label><?php if($walletEligible): ?><label id="walletPayLabel"><input type="radio" name="payment_method" value="wallet" id="walletPayRadio" data-min="<?=e((string)$WALLET_MIN_ORDER)?>"> 💰 Wallet (₹<?=number_format($userWallet,2)?>)</label><?php endif; ?></div><?php if($walletEligible): ?><small class="hint wallet-min-note" id="walletMinNote">Wallet can be used on orders of ₹<?=number_format($WALLET_MIN_ORDER,0)?> or more.</small><?php endif; ?></label></div>
+      <div class="field-grid compact"><label>Delivery slot<select name="delivery_slot"><option>Any available slot</option><?php foreach(delivery_slots($pdo) as $slot): ?><option><?=e($slot)?></option><?php endforeach; ?></select></label><label>Payment method<div class="payment-options"><label><input type="radio" name="payment_method" value="cod" checked> COD</label><label><input type="radio" name="payment_method" value="razorpay"> UPI / Online</label><?php if($walletEligible): ?><label id="walletPayLabel"><input type="radio" name="payment_method" value="wallet" id="walletPayRadio" data-min="<?=e((string)$WALLET_MIN_ORDER)?>"> 💰 Wallet (₹<?=number_format($userWallet,2)?>)</label><?php endif; ?></div><?php if($walletEligible): ?><small class="hint wallet-min-note" id="walletMinNote">Wallet can be used when the cart subtotal is ₹<?=number_format($WALLET_MIN_ORDER,0)?> or more.</small><?php endif; ?></label></div>
       <div class="coupon-points">
         <div>
           <?php if($activeCoupons): ?>
@@ -273,20 +273,20 @@ $walletEligible = ($userWallet >= $WALLET_SHOW_MIN);
     document.getElementById('handlingTip')?.classList.toggle('show');
   });
 
-  // ── Wallet gating: usable only when the order total is high enough ──
+  // ── Wallet gating: usable only when the cart SUBTOTAL is high enough ──
   (function(){
     var radio=document.getElementById('walletPayRadio');
     if(!radio) return;                          // wallet not eligible / not shown
     var minOrder=parseFloat(radio.getAttribute('data-min'))||0;
     var label=document.getElementById('walletPayLabel');
     var note=document.getElementById('walletMinNote');
-    var totalEl=document.getElementById('cartTotal');
-    function currentTotal(){
-      var t=(totalEl&&totalEl.textContent||'').replace(/[^0-9.]/g,'');
+    var subEl=document.getElementById('cartSubtotal');
+    function currentSubtotal(){
+      var t=(subEl&&subEl.textContent||'').replace(/[^0-9.]/g,'');
       return parseFloat(t)||0;
     }
     function sync(){
-      var ok=currentTotal()>=minOrder;
+      var ok=currentSubtotal()>=minOrder;
       radio.disabled=!ok;
       if(label) label.classList.toggle('pay-disabled',!ok);
       if(!ok && radio.checked){
@@ -296,9 +296,9 @@ $walletEligible = ($userWallet >= $WALLET_SHOW_MIN);
       }
       if(note) note.style.display = ok ? 'none' : '';
     }
-    // The total is filled asynchronously by renderCart(); watch for changes.
-    if(totalEl && window.MutationObserver){
-      new MutationObserver(sync).observe(totalEl,{childList:true,characterData:true,subtree:true});
+    // The subtotal is filled asynchronously by renderCart(); watch for changes.
+    if(subEl && window.MutationObserver){
+      new MutationObserver(sync).observe(subEl,{childList:true,characterData:true,subtree:true});
     }
     sync();
     setTimeout(sync,1500); // safety: after the async cart load settles
