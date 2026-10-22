@@ -130,12 +130,15 @@ const saveCart=c=>localStorage.setItem(CART_KEY,JSON.stringify(c));
 function updateCartCount(){const n=getCart().reduce((s,i)=>s+i.qty,0);document.querySelectorAll('#cartCount').forEach(x=>x.textContent=n?`(${n})`:'');const link=document.getElementById('cartLink');if(link){link.classList.toggle('disabled-cart',n===0);link.setAttribute('aria-disabled',n===0?'true':'false');if(n===0)link.dataset.href=link.href;}agUpdateFloatingCart(n);}
 
 /* ============================================================
-   FLOATING CART BAR — appears once the cart has ≥1 item.
-   Desktop: round icon button, fixed bottom-right.
+   FLOATING CART WIDGET ("cart info ticket") — appears once the
+   cart has at least 1 item. Shows item count + live ₹ total,
+   like other grocery sites (Blinkit / BigBasket / Zepto).
+   Desktop: compact ticket card, fixed bottom-right.
    Mobile:  full-width strip, fixed at the bottom.
-   Stays fixed while scrolling; hidden on the cart page itself.
+   Stays fixed while scrolling & across page loads; hidden on the
+   cart page itself.
    ============================================================ */
-var agFloatingCartEl=null;
+var agFloatingCartEl=null, agCartTotal=null, agTotalTimer=null;
 function agOnCartPage(){ return /\/cart(\.php|\/)?($|[?#])/i.test(location.pathname+location.search) || !!document.getElementById('cartItems'); }
 function agBuildFloatingCart(){
   if(agFloatingCartEl || agOnCartPage()) return;
@@ -147,9 +150,31 @@ function agBuildFloatingCart(){
   a.setAttribute('aria-label','View cart');
   a.innerHTML=
     '<span class="agfc-icon" aria-hidden="true">🛒<b class="agfc-badge" id="agfcBadge">0</b></span>'+
-    '<span class="agfc-text"><span class="agfc-count" id="agfcCount">0 items</span><span class="agfc-cta">View cart →</span></span>';
+    '<span class="agfc-info">'+
+      '<span class="agfc-count" id="agfcCount">0 items</span>'+
+      '<span class="agfc-total" id="agfcTotal"></span>'+
+    '</span>'+
+    '<span class="agfc-cta">View cart <span aria-hidden="true">→</span></span>';
   document.body.appendChild(a);
   agFloatingCartEl=a;
+}
+/* Fetch the live ₹ total for the current cart (debounced). */
+function agRefreshCartTotal(){
+  if(agOnCartPage()) return;
+  clearTimeout(agTotalTimer);
+  agTotalTimer=setTimeout(function(){
+    var items=getCart(); if(!items.length){ agCartTotal=null; return; }
+    var base=(window.AAPKI&&window.AAPKI.base)||'/aapkigrocery/';
+    fetch(base+'api/cart-products.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:items})})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(!d||!d.ok||!d.items){ return; }
+        var t=0; d.items.forEach(function(x){ t+=Number(x.line_total||0); });
+        agCartTotal=t;
+        var el=document.getElementById('agfcTotal');
+        if(el) el.textContent='₹'+t.toFixed(2);
+      }).catch(function(){});
+  },250);
 }
 function agUpdateFloatingCart(n){
   if(agOnCartPage()) return;            // never show on the cart page
@@ -161,6 +186,11 @@ function agUpdateFloatingCart(n){
   if(show){
     var badge=document.getElementById('agfcBadge'); if(badge) badge.textContent=n;
     var cnt=document.getElementById('agfcCount'); if(cnt) cnt.textContent=n+(n===1?' item':' items');
+    var tot=document.getElementById('agfcTotal');
+    if(tot){ tot.textContent = (agCartTotal!=null) ? '₹'+Number(agCartTotal).toFixed(2) : ''; }
+    agRefreshCartTotal(); // keep the ₹ total fresh
+  } else {
+    agCartTotal=null;
   }
 }
 updateCartCount();
