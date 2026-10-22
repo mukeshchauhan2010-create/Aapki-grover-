@@ -107,4 +107,37 @@ foreach ($sizes as $sz) {
 // Default favicon.png = 32
 copy($outDir.'/favicon-32.png', $outDir.'/favicon.png');
 echo "✓ favicon.png (32)\n";
+
+/* ============================================================
+   PWA MASKABLE ICONS
+   Android crops adaptive icons to a circle/squircle, so maskable
+   icons need a full-bleed background and the artwork kept inside
+   the central ~80% "safe zone". We paint a GREEN background and
+   drop the (white-rounded-square) "ag" mark, scaled to ~78%,
+   centered — so the leaves/letters never get clipped.
+   ============================================================ */
+function buildMaskable(GdImage $master, array $GREEN): GdImage {
+    $im = imagecreatetruecolor(S, S);
+    imagesavealpha($im, true);
+    imagealphablending($im, true);
+    // Full-bleed brand-green background.
+    imagefill($im, 0, 0, imagecolorallocate($im, $GREEN[0], $GREEN[1], $GREEN[2]));
+    // Place the mark inside the safe zone (78% of the canvas, centered).
+    $inner = (int) round(S * 0.78);
+    $off   = (int) round((S - $inner) / 2);
+    imagecopyresampled($im, $master, $off, $off, 0, 0, $inner, $inner, S, S);
+    return $im;
+}
+
+$maskMaster = buildMaskable($master, $GREEN);
+foreach ([192, 512] as $sz) {
+    $out = imagecreatetruecolor($sz, $sz);
+    imagesavealpha($out, true);
+    imagealphablending($out, false);
+    imagecopyresampled($out, $maskMaster, 0,0,0,0, $sz,$sz, S,S);
+    imagepng($out, $outDir."/icon-maskable-$sz.png");
+    imagedestroy($out);
+    echo "✓ icon-maskable-$sz.png\n";
+}
+
 echo "Done. (favicon.svg is hand-authored separately.)\n";

@@ -2,5 +2,23 @@
 // Active service pincodes for client-side serviceability checks.
 $servedPins = [];
 try { $servedPins = $pdo->query('SELECT pincode FROM service_pincodes WHERE is_active=1')->fetchAll(PDO::FETCH_COLUMN); } catch(Throwable $e) {}
+// PWA install-prompt eligibility: a logged-in user who has placed ≥1 order.
+$canInstall = false;
+if (!empty($_SESSION['user_id'])) {
+    try {
+        $oc = $pdo->prepare('SELECT COUNT(*) FROM orders WHERE user_id=?');
+        $oc->execute([(int)$_SESSION['user_id']]);
+        $canInstall = ((int)$oc->fetchColumn() > 0);
+    } catch(Throwable $e) {}
+}
 ?>
-<script>window.AAPKI={base:'<?=e(url())?>',cartMode:'<?=e(setting($pdo,'cart_mode','coming_soon'))?>',servedPincodes:<?=json_encode(array_values($servedPins))?>,csrf:'<?=e(csrf_token())?>',isMember:<?=!empty($_SESSION['user_id'])?'true':'false'?>};</script><script defer src="<?=url('assets/js/app.js')?>?v=<?=@filemtime(__DIR__.'/../assets/js/app.js')?:time()?>"></script></body></html>
+<script>window.AAPKI={base:'<?=e(url())?>',cartMode:'<?=e(setting($pdo,'cart_mode','coming_soon'))?>',servedPincodes:<?=json_encode(array_values($servedPins))?>,csrf:'<?=e(csrf_token())?>',isMember:<?=!empty($_SESSION['user_id'])?'true':'false'?>,canInstall:<?=$canInstall?'true':'false'?>};</script>
+<script>
+/* Register the service worker (enables PWA install). Safe no-op if unsupported. */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('<?=e(url('sw.js'))?>',{scope:'<?=e(url())?>'}).catch(function(){});
+  });
+}
+</script>
+<script defer src="<?=url('assets/js/app.js')?>?v=<?=@filemtime(__DIR__.'/../assets/js/app.js')?:time()?>"></script></body></html>

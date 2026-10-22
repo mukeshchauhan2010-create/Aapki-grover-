@@ -140,8 +140,9 @@ function updateCartCount(){const n=getCart().reduce((s,i)=>s+i.qty,0);document.q
    ============================================================ */
 var agFloatingCartEl=null, agCartTotal=null, agTotalTimer=null;
 function agOnCartPage(){ return /\/cart(\.php|\/)?($|[?#])/i.test(location.pathname+location.search) || !!document.getElementById('cartItems'); }
+function agFloatingCartAllowed(){ return window.matchMedia('(max-width:768px)').matches; } // mobile only
 function agBuildFloatingCart(){
-  if(agFloatingCartEl || agOnCartPage()) return;
+  if(agFloatingCartEl || agOnCartPage() || !agFloatingCartAllowed()) return;
   var base=(window.AAPKI&&window.AAPKI.base)||'/aapkigrocery/';
   var a=document.createElement('a');
   a.id='agFloatingCart';
@@ -177,7 +178,7 @@ function agRefreshCartTotal(){
   },250);
 }
 function agUpdateFloatingCart(n){
-  if(agOnCartPage()) return;            // never show on the cart page
+  if(agOnCartPage() || !agFloatingCartAllowed()) return; // mobile only, not on cart page
   if(n>0 && !agFloatingCartEl) agBuildFloatingCart();
   if(!agFloatingCartEl) return;
   var show=n>0;
@@ -229,3 +230,97 @@ const accountTrigger=document.getElementById('accountTrigger'),accountDropdown=d
 
 
 // ── Hero Banner Slider — handled inline in index.php ─────────
+
+/* ============================================================
+   PWA "ADD TO HOME SCREEN" PROMPT  (MOBILE ONLY)
+   Shown to a logged-in user who has placed >=1 order (canInstall).
+   - If the app is already installed / running standalone -> never ask.
+   - If the user installs via our prompt -> remember it -> never ask again.
+   - Otherwise (dismissed) -> ask again, once per browsing session.
+   ============================================================ */
+(function agInstallPromptInit(){
+  var AG = window.AAPKI || {};
+  if(!AG.canInstall) return;                              // only eligible users
+
+  // Mobile only.
+  var isMobile = window.matchMedia('(max-width:768px)').matches
+              || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  if(!isMobile) return;
+
+  var INSTALLED_KEY='aapki_pwa_installed_v1';             // persistent (localStorage)
+  var SESSION_KEY='aapki_pwa_asked_session_v1';           // once-per-session (sessionStorage)
+
+  // Already launched from the home-screen icon? Then it's installed.
+  var standalone = window.matchMedia('(display-mode: standalone)').matches
+                || window.navigator.standalone === true;
+  if(standalone){ try{localStorage.setItem(INSTALLED_KEY,'1');}catch(_){ } return; }
+
+  // Previously installed via our prompt? Never ask again.
+  try{ if(localStorage.getItem(INSTALLED_KEY)==='1') return; }catch(_){}
+
+  // Already asked this session? Honour "once per visit".
+  try{ if(sessionStorage.getItem(SESSION_KEY)==='1') return; }catch(_){}
+
+  var deferredPrompt=null;   // Android: the captured beforeinstallprompt event
+  var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.MSStream;
+
+  function markAskedThisSession(){ try{sessionStorage.setItem(SESSION_KEY,'1');}catch(_){ } }
+  function closeBanner(){ var b=document.getElementById('agInstallBanner'); if(b) b.remove(); }
+
+  function showBanner(mode){   // mode: 'android' | 'ios'
+    if(document.getElementById('agInstallBanner')) return;
+    markAskedThisSession();
+    var base=AG.base||'/aapkigrocery/';
+    var wrap=document.createElement('div');
+    wrap.id='agInstallBanner';
+    wrap.className='ag-install-banner';
+    var actionHtml = (mode==='android')
+      ? '<button type="button" class="agib-install" id="agibInstall">Install</button>'
+      : '<span class="agib-ios">Tap <b>Share</b> <span aria-hidden="true">⬆️</span> then <b>Add to Home Screen</b></span>';
+    wrap.innerHTML=
+      '<img class="agib-icon" src="'+base+'assets/favicon-192.png" alt="">'+
+      '<div class="agib-text"><b>Add Aapki Grocery to your home screen</b>'+
+        '<small>One-tap access, like an app.</small></div>'+
+      '<div class="agib-actions">'+actionHtml+
+        '<button type="button" class="agib-close" id="agibClose" aria-label="Dismiss">&times;</button>'+
+      '</div>';
+    document.body.appendChild(wrap);
+    requestAnimationFrame(function(){ wrap.classList.add('show'); });
+
+    var closeBtn=document.getElementById('agibClose');
+    if(closeBtn) closeBtn.addEventListener('click', closeBanner);
+
+    if(mode==='android'){
+      var btn=document.getElementById('agibInstall');
+      if(btn) btn.addEventListener('click', function(){
+        if(!deferredPrompt){ closeBanner(); return; }
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function(choice){
+          if(choice && choice.outcome==='accepted'){
+            try{localStorage.setItem(INSTALLED_KEY,'1');}catch(_){}
+          }
+          deferredPrompt=null;
+          closeBanner();
+        });
+      });
+    }
+  }
+
+  // Android / Chromium: capture the install event and show our banner.
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    deferredPrompt=e;
+    showBanner('android');
+  });
+
+  // If the browser fires appinstalled (any path), remember it permanently.
+  window.addEventListener('appinstalled', function(){
+    try{localStorage.setItem(INSTALLED_KEY,'1');}catch(_){}
+    closeBanner();
+  });
+
+  // iOS Safari has no beforeinstallprompt — show manual instructions once.
+  if(isIOS){
+    setTimeout(function(){ showBanner('ios'); }, 1200);
+  }
+})();

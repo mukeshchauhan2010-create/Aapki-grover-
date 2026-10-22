@@ -1235,11 +1235,10 @@ img,svg,video{max-width:100%;height:auto}
 .agfc-total:empty{display:none}
 .agfc-cta{font-weight:800;font-size:13px;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
 
-/* ── Desktop: compact ticket card, bottom-right ── */
+/* ── Desktop: hidden (floating cart is a mobile-only feature) ── */
 @media(min-width:769px){
-  .ag-floating-cart{right:24px;bottom:24px;border-radius:14px;padding:12px 18px}
-  .ag-floating-cart:hover{transform:translateY(-3px);box-shadow:0 16px 38px rgba(23,77,43,.4)}
-  .ag-floating-cart .agfc-cta{margin-left:6px;padding-left:14px;border-left:1px solid rgba(255,255,255,.3)}
+  .ag-floating-cart{display:none!important}
+  body.ag-has-floating-cart{padding-bottom:0}
 }
 
 /* ── Mobile: full-width strip, bottom ── */
@@ -1257,3 +1256,35 @@ img,svg,video{max-width:100%;height:auto}
   /* lift the footer so the fixed strip never covers page content */
   body.ag-has-floating-cart{padding-bottom:66px}
 }
+
+/* ============================================================
+   PWA "ADD TO HOME SCREEN" BANNER (mobile only)
+   ============================================================ */
+.ag-install-banner{
+  position:fixed;left:10px;right:10px;bottom:10px;z-index:950;
+  display:flex;align-items:center;gap:12px;
+  background:#fff;color:var(--ink,#1c261e);
+  border:1px solid var(--line,#dce5da);border-radius:14px;
+  padding:12px 14px;box-shadow:0 12px 34px rgba(23,77,43,.22);
+  transform:translateY(140%);transition:transform .28s ease;
+}
+.ag-install-banner.show{transform:translateY(0)}
+.agib-icon{width:42px;height:42px;border-radius:10px;flex:0 0 auto}
+.agib-text{flex:1;min-width:0;line-height:1.3}
+.agib-text b{display:block;font-size:14px;color:var(--green,#174d2b)}
+.agib-text small{color:var(--muted,#68746b);font-size:12px}
+.agib-ios{font-size:12px;color:var(--muted,#68746b);max-width:150px;line-height:1.35}
+.agib-ios b{color:var(--green,#174d2b)}
+.agib-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.agib-install{
+  background:var(--green,#174d2b);color:#fff;border:0;border-radius:9px;
+  padding:9px 16px;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap;
+}
+.agib-close{
+  background:none;border:0;font-size:24px;line-height:1;color:#9aa89c;
+  cursor:pointer;padding:0 2px;
+}
+/* When the floating cart strip is also visible, sit above it. */
+body.ag-has-floating-cart .ag-install-banner{bottom:76px}
+/* Desktop: never show (mobile-only feature). */
+@media(min-width:769px){ .ag-install-banner{display:none!important} }
